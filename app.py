@@ -172,6 +172,30 @@ class StudyPlannerApp:
         # Show home page by default
         self.current_page = "home"
         self.pages["home"].pack(fill=tk.BOTH, expand=True)
+    
+    def _switch_page(self, page_name):
+        """Switch between pages"""
+        # Hide current page
+        if self.current_page in self.pages:
+            self.pages[self.current_page].pack_forget()
+        
+        # Show new page
+        if page_name in self.pages:
+            self.pages[page_name].pack(fill=tk.BOTH, expand=True)
+            self.current_page = page_name
+            
+            # Update navigation button states
+            for name, btn in self.nav_buttons.items():
+                if name == page_name:
+                    btn.config(bg=PRIMARY_BLUE_DARK)
+                else:
+                    btn.config(bg=PRIMARY_BLUE)
+            
+            # Refresh page data
+            if page_name == "analysis":
+                self._refresh_analysis_page()
+            elif page_name == "history":
+                self._refresh_history_page()
 
 if __name__ == "__main__":
     app = StudyPlannerApp()
