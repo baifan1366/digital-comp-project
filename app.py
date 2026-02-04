@@ -4,6 +4,26 @@ Study Planner Application - With Timer Functionality and Tab Navigation
 import tkinter as tk
 from tkinter import messagebox, ttk, Canvas
 
+# Color definitions - Enhanced modern palette
+PRIMARY_BLUE = "#4A90E2"
+PRIMARY_BLUE_DARK = "#357ABD"
+SUCCESS = "#5CB85C"
+SUCCESS_DARK = "#4CAF50"
+WARNING = "#F0AD4E"
+WARNING_DARK = "#EC971F"
+INFO = "#5BC0DE"
+INFO_DARK = "#46B8DA"
+ERROR = "#D9534F"
+ERROR_DARK = "#C9302C"
+BG_LIGHT = "#F8F9FA"
+BG_WHITE = "#FFFFFF"
+BG_CARD = "#FFFFFF"
+TEXT_PRIMARY = "#2C3E50"
+TEXT_SECONDARY = "#7F8C8D"
+BORDER_COLOR = "#D0D7DE"
+BORDER_LIGHT = "#E8EDF2"
+SHADOW_COLOR = "#00000010"
+
 class StudyPlannerApp:
     def __init__(self):
         # Initialize storage
@@ -80,6 +100,78 @@ class StudyPlannerApp:
     def run(self):
         """run app"""
         self.root.mainloop()
+
+    def _build_ui(self):
+        """Build complete UI with tab navigation"""
+        # Header bar with horizontal layout
+        header = tk.Frame(self.root, bg=PRIMARY_BLUE, height=60)
+        header.pack(fill=tk.X)
+        header.pack_propagate(False)
+        
+        # Title and subtitle in horizontal layout
+        title_container = tk.Frame(header, bg=PRIMARY_BLUE)
+        title_container.pack(side=tk.LEFT, padx=25, pady=12)
+        
+        tk.Label(
+            title_container,
+            text="📚 Study Planner",
+            bg=PRIMARY_BLUE,
+            fg="white",
+            font=("Segoe UI", 16, "bold")
+        ).pack(side=tk.LEFT)
+        
+        tk.Label(
+            title_container,
+            text="  •  Focus • Learn • Achieve",
+            bg=PRIMARY_BLUE,
+            fg="#E3F2FD",
+            font=("Segoe UI", 11)
+        ).pack(side=tk.LEFT, padx=(10, 0))
+        
+        # Tab navigation buttons in header
+        nav_container = tk.Frame(header, bg=PRIMARY_BLUE)
+        nav_container.pack(side=tk.RIGHT, padx=25, pady=12)
+        
+        self.nav_buttons = {}
+        nav_items = [
+            ("🏠 Home", "home"),
+            ("📊 Analysis", "analysis"),
+            ("📜 History", "history")
+        ]
+        
+        for text, page_name in nav_items:
+            btn = tk.Button(
+                nav_container,
+                text=text,
+                bg=PRIMARY_BLUE_DARK if page_name == "home" else PRIMARY_BLUE,
+                fg="white",
+                font=("Segoe UI", 10, "bold"),
+                relief=tk.FLAT,
+                cursor="hand2",
+                padx=15,
+                pady=8,
+                command=lambda p=page_name: self._switch_page(p)
+            )
+            btn.pack(side=tk.LEFT, padx=3)
+            self.nav_buttons[page_name] = btn
+        
+        # Main content area with tab pages
+        main_container = tk.Frame(self.root, bg=BG_LIGHT)
+        main_container.pack(fill=tk.BOTH, expand=True)
+        
+        # Create pages container
+        self.pages_container = tk.Frame(main_container, bg=BG_LIGHT)
+        self.pages_container.pack(fill=tk.BOTH, expand=True)
+        
+        # Create all pages
+        self.pages = {}
+        self._create_home_page()
+        self._create_analysis_page()
+        self._create_history_page()
+        
+        # Show home page by default
+        self.current_page = "home"
+        self.pages["home"].pack(fill=tk.BOTH, expand=True)
 
 if __name__ == "__main__":
     app = StudyPlannerApp()
