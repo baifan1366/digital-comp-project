@@ -1,6 +1,7 @@
 """
 Study Planner Application - With Timer Functionality and Tab Navigation
 """
+from datetime import datetime, timedelta
 import tkinter as tk
 from tkinter import messagebox, ttk, Canvas
 
@@ -1153,6 +1154,263 @@ class StudyPlannerApp:
         
         print("⏹ Stopped")
     
+<<<<<<< Updated upstream
+=======
+    def _on_timer_tick(self, remaining_seconds: int):
+        """Timer tick callback - called in background thread"""
+        # Put UI update into queue
+        self.update_queue.put(("tick", remaining_seconds))
+    
+    def _on_phase_complete(self):
+        """Phase complete callback - called in background thread"""
+        # Put phase complete event into queue
+        self.update_queue.put(("phase_complete", None))
+    
+    def _process_updates(self):
+        """Process UI update queue - called in main thread"""
+        try:
+            while True:
+                event_type, data = self.update_queue.get_nowait()
+                
+                if event_type == "tick":
+                    remaining_seconds = data
+                    minutes = remaining_seconds // 60
+                    seconds = remaining_seconds % 60
+                    self.timer_label.config(text=f"{minutes:02d}:{seconds:02d}")
+                    
+                    # Update phase display (including cycle info)
+                    state = self.study_planner.get_current_state()
+                    current_cycle = self.study_planner._current_cycle
+                    total_cycles = self.study_planner._total_cycles
+                    
+                    if state.name == "STUDY":
+                        if total_cycles > 1:
+                            self.phase_label.config(text=f"Studying (Round {current_cycle}/{total_cycles})", fg=PRIMARY_BLUE)
+                        else:
+                            self.phase_label.config(text="Studying", fg=PRIMARY_BLUE)
+                    elif state.name == "BREAK":
+                        if total_cycles > 1:
+                            self.phase_label.config(text=f"Break Time (Round {current_cycle}/{total_cycles})", fg=SUCCESS)
+                        else:
+                            self.phase_label.config(text="Break Time", fg=SUCCESS)
+                    elif state.name == "LONG_BREAK":
+                        self.phase_label.config(text="Long Break", fg=INFO)
+                    elif state.name == "COMPLETED":
+                        self.phase_label.config(text="Completed!", fg=SUCCESS)
+                        self._on_session_complete()
+                
+                elif event_type == "phase_complete":
+                    # Phase complete, check state
+                    state = self.study_planner.get_current_state()
+                    if state.name == "COMPLETED":
+                        self._on_session_complete()
+                
+        except queue.Empty:
+            pass
+        
+        # Check queue every 100ms
+        self.root.after(100, self._process_updates)
+    
+    def _on_session_complete(self):
+        """Session complete"""
+        self.timer_label.config(text="Done!")
+        self.phase_label.config(text="Congratulations! Study plan completed!", fg=SUCCESS)
+        
+        # Reset button states
+        self.start_btn.config(state=tk.NORMAL if self.selected_plan else tk.DISABLED)
+        self.pause_btn.config(state=tk.DISABLED)
+        self.resume_btn.config(state=tk.DISABLED)
+        self.stop_btn.config(state=tk.DISABLED)
+        
+        # Refresh Analysis and History pages with latest data
+        self._refresh_analysis_page()
+        self._refresh_history_page()
+        
+        messagebox.showinfo("Completed", "Congratulations! You have completed your study plan!")
+        print("✅ Study plan completed!")
+    
+    def _refresh_analysis_page(self):
+        """Refresh analysis page with latest statistics"""
+        # Calculate period data based on mode
+        if self.period_mode == "7days":
+            period_data = self._get_days_data(7)
+        else:
+            period_data = self._get_days_data(30)
+        
+        # Update period statistics
+        self.period_total_time.config(text=format_duration(period_data["total_time"]))
+        self.period_session_count.config(text=str(period_data["sessions"]))
+        self.period_completed_count.config(text=str(period_data["completed"]))
+        self.period_interrupted_count.config(text=str(period_data["interrupted"]))
+        
+        # Draw period chart
+        title = f"Last {7 if self.period_mode == '7days' else 30} Days Overview"
+        if self.period_chart_mode == "bar":
+            self._draw_bar_chart(
+                self.period_chart_canvas,
+                period_data["total_time"],
+                period_data["sessions"],
+                period_data["completed"],
+                period_data["interrupted"],
+                title
+            )
+        else:
+            self._draw_pie_chart(
+                self.period_chart_canvas,
+                period_data["total_time"],
+                period_data["sessions"],
+                period_data["completed"],
+                period_data["interrupted"],
+                title
+            )
+        
+        # Calculate all-time data
+        alltime_data = self._get_alltime_data()
+        
+        # Update all-time statistics
+        self.alltime_total_time.config(text=format_duration(alltime_data["total_time"]))
+        self.alltime_session_count.config(text=str(alltime_data["sessions"]))
+        self.alltime_completed_count.config(text=str(alltime_data["completed"]))
+        self.alltime_interrupted_count.config(text=str(alltime_data["interrupted"]))
+        
+        # Draw all-time chart
+        if self.alltime_chart_mode == "bar":
+            self._draw_bar_chart(
+                self.alltime_chart_canvas,
+                alltime_data["total_time"],
+                alltime_data["sessions"],
+                alltime_data["completed"],
+                alltime_data["interrupted"],
+                "All Time Overview"
+            )
+        else:
+            self._draw_pie_chart(
+                self.alltime_chart_canvas,
+                alltime_data["total_time"],
+                alltime_data["sessions"],
+                alltime_data["completed"],
+                alltime_data["interrupted"],
+                "All Time Overview"
+            )
+        
+        # Get most used plan from history
+        recent_plans = self.history_manager.get_recent(100)
+        if recent_plans:
+            plan_counts = {}
+            
+            for plan in recent_plans:
+                plan_name = plan.name
+                if plan_name not in plan_counts:
+                    plan_counts[plan_name] = 0
+                plan_counts[plan_name] += 1
+            
+            # Find most used plan
+            most_used = max(plan_counts.items(), key=lambda x: x[1])
+            self.most_used_plan_label.config(text=f"{most_used[0]} ({most_used[1]} times)")
+        else:
+            self.most_used_plan_label.config(text="No data yet")
+    
+    def _get_days_data(self, days):
+        """Get statistics for the last N days"""
+        today = datetime.now().date()
+        start_date = today - timedelta(days=days-1)  # Include today
+        
+        stats_data = self.statistics_tracker._stats
+        
+        # Calculate totals for the period
+        total_time = 0
+        completed = 0
+        interrupted = 0
+        
+        # Iterate through all days in the period
+        current_day = start_date
+        while current_day <= today:
+            day_key = current_day.isoformat()
+            if day_key in stats_data.get("daily", {}):
+                day_data = stats_data["daily"][day_key]
+                total_time += day_data.get("total_study_minutes", 0)
+                completed += day_data.get("completed_sessions", 0)
+                interrupted += day_data.get("interrupted_sessions", 0)
+            
+            current_day += timedelta(days=1)
+        
+        # Total sessions = completed + interrupted
+        sessions = completed + interrupted
+        
+        return {
+            "total_time": total_time,
+            "sessions": sessions,
+            "completed": completed,
+            "interrupted": interrupted
+        }
+    
+    def _get_week_data(self):
+        """Get this week's statistics (kept for compatibility)"""
+        return self._get_days_data(7)
+    
+    def _get_month_data(self):
+        """Get this month's statistics"""
+        today = datetime.now().date()
+        month_start = today.replace(day=1)
+        
+        stats_data = self.statistics_tracker._stats
+        
+        # Calculate month totals
+        total_time = 0
+        sessions = 0
+        completed = 0
+        interrupted = 0
+        
+        # Iterate through all days in the month
+        current_day = month_start
+        while current_day <= today:
+            day_key = current_day.isoformat()
+            if day_key in stats_data.get("daily", {}):
+                day_data = stats_data["daily"][day_key]
+                total_time += day_data.get("total_study_minutes", 0)
+                sessions += day_data.get("completed_sessions", 0)
+                interrupted += day_data.get("interrupted_sessions", 0)
+            
+            current_day += timedelta(days=1)
+        
+        # Count completed pomodoros for the month
+        for week_key, week_data in stats_data.get("weekly", {}).items():
+            week_date = datetime.fromisoformat(week_key).date()
+            if month_start <= week_date <= today:
+                completed += week_data.get("completed_pomodoros", 0)
+        
+        return {
+            "total_time": total_time,
+            "sessions": sessions,
+            "completed": completed,
+            "interrupted": interrupted
+        }
+    
+    def _get_alltime_data(self):
+        """Get all-time statistics"""
+        stats_data = self.statistics_tracker._stats
+        
+        # Calculate all-time totals
+        total_time = 0
+        completed = 0
+        interrupted = 0
+        
+        for day_data in stats_data.get("daily", {}).values():
+            total_time += day_data.get("total_study_minutes", 0)
+            completed += day_data.get("completed_sessions", 0)
+            interrupted += day_data.get("interrupted_sessions", 0)
+        
+        # Total sessions = completed + interrupted
+        sessions = completed + interrupted
+        
+        return {
+            "total_time": total_time,
+            "sessions": sessions,
+            "completed": completed,
+            "interrupted": interrupted
+        }
+    
+>>>>>>> Stashed changes
     def run(self):
         """run app"""
         self.root.mainloop()
