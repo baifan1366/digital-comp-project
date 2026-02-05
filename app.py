@@ -2,6 +2,8 @@
 Study Planner Application - With Timer Functionality and Tab Navigation
 """
 from datetime import datetime, timedelta
+import os
+import queue
 import tkinter as tk
 from tkinter import messagebox, ttk, Canvas
 
