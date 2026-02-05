@@ -97,10 +97,6 @@ class StudyPlannerApp:
         print("5. System notifications and sound alerts")
         print("="*60 + "\n")
 
-    def run(self):
-        """run app"""
-        self.root.mainloop()
-
     def _build_ui(self):
         """Build complete UI with tab navigation"""
         # Header bar with horizontal layout
@@ -196,7 +192,61 @@ class StudyPlannerApp:
                 self._refresh_analysis_page()
             elif page_name == "history":
                 self._refresh_history_page()
-
+    
+    def _create_home_page(self):
+        """Create home page with study planner functionality"""
+        # Create canvas and scrollbar for responsive design
+        home_frame = tk.Frame(self.pages_container, bg=BG_LIGHT)
+        self.pages["home"] = home_frame
+        
+        canvas = tk.Canvas(home_frame, bg=BG_LIGHT, highlightthickness=0)
+        scrollbar = tk.Scrollbar(home_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=BG_LIGHT)
+        
+        # Configure scrollable frame to expand with canvas width
+        def _configure_scroll_region(event):
+            canvas.configure(scrollregion=canvas.bbox("all"))
+        
+        def _configure_canvas_width(event):
+            # Make scrollable_frame width match canvas width
+            canvas_width = event.width
+            canvas.itemconfig(canvas_window, width=canvas_width)
+        
+        scrollable_frame.bind("<Configure>", _configure_scroll_region)
+        canvas.bind("<Configure>", _configure_canvas_width)
+        
+        canvas_window = canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Pack scrollbar and canvas
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Enable mouse wheel scrolling only when mouse is over canvas
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        def _bind_mousewheel(event):
+            canvas.bind_all("<MouseWheel>", _on_mousewheel)
+        
+        def _unbind_mousewheel(event):
+            canvas.unbind_all("<MouseWheel>")
+        
+        canvas.bind("<Enter>", _bind_mousewheel)
+        canvas.bind("<Leave>", _unbind_mousewheel)
+        
+        # Content frame (now inside scrollable_frame)
+        content = tk.Frame(scrollable_frame, bg=BG_LIGHT)
+        content.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
+        
+        # Store content reference for home page
+        self.home_content = content
+        
+        
+    def run(self):
+        """run app"""
+        self.root.mainloop()
+        
 if __name__ == "__main__":
     app = StudyPlannerApp()
     app.run()
