@@ -1153,6 +1153,12 @@ class StudyPlannerApp:
         
         print("⏹ Stopped")
     
+    def _on_timer_tick(self, remaining_seconds: int):
+        """Timer tick callback - called in background thread"""
+        # Put UI update into queue
+        self.update_queue.put(("tick", remaining_seconds))
+    
+    
     def run(self):
         """run app"""
         self.root.mainloop()
