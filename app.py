@@ -930,6 +930,92 @@ class StudyPlannerApp:
             highlightthickness=0
         )
         self.alltime_chart_canvas.pack(fill=tk.BOTH, expand=True)
+
+    def _create_history_page(self):
+        """Create history page with run history table"""
+        history_frame = tk.Frame(self.pages_container, bg=BG_LIGHT)
+        self.pages["history"] = history_frame
+        
+        # Content
+        content = tk.Frame(history_frame, bg=BG_LIGHT)
+        content.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
+        
+        # Page title
+        tk.Label(
+            content,
+            text="📜 Study History",
+            bg=BG_LIGHT,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 18, "bold")
+        ).pack(anchor=tk.W, pady=(0, 20))
+        
+        # History table card
+        table_card = tk.LabelFrame(
+            content,
+            text="  Run History  ",
+            bg=BG_LIGHT,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 11, "bold"),
+            relief=tk.SOLID,
+            borderwidth=2
+        )
+        table_card.pack(fill=tk.BOTH, expand=True)
+        
+        # Table container
+        table_container = tk.Frame(table_card, bg=BG_WHITE)
+        table_container.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
+        
+        # Create Treeview table
+        columns = ("plan_name", "study_time", "break_time", "cycles", "timestamp")
+        self.history_tree = ttk.Treeview(
+            table_container,
+            columns=columns,
+            show="headings",
+            height=15
+        )
+        
+        # Set column headings
+        self.history_tree.heading("plan_name", text="Plan Name")
+        self.history_tree.heading("study_time", text="Study Time")
+        self.history_tree.heading("break_time", text="Break Time")
+        self.history_tree.heading("cycles", text="Cycles")
+        self.history_tree.heading("timestamp", text="Last Used")
+        
+        # Set column widths
+        self.history_tree.column("plan_name", width=200)
+        self.history_tree.column("study_time", width=100)
+        self.history_tree.column("break_time", width=100)
+        self.history_tree.column("cycles", width=80)
+        self.history_tree.column("timestamp", width=180)
+        
+        # Add scrollbar
+        scrollbar = ttk.Scrollbar(
+            table_container,
+            orient=tk.VERTICAL,
+            command=self.history_tree.yview
+        )
+        self.history_tree.configure(yscrollcommand=scrollbar.set)
+        
+        self.history_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Run Again button
+        btn_frame = tk.Frame(table_card, bg=BG_CARD)
+        btn_frame.pack(fill=tk.X, padx=15, pady=(0, 15))
+        
+        tk.Button(
+            btn_frame,
+            text="▶ Run Again",
+            command=self._run_again_selected,
+            bg=SUCCESS,
+            fg="white",
+            activebackground=SUCCESS_DARK,
+            font=("Segoe UI", 11, "bold"),
+            relief=tk.FLAT,
+            padx=25,
+            pady=12,
+            cursor="hand2"
+        ).pack(side=tk.LEFT)
         
     def run(self):
         """run app"""
