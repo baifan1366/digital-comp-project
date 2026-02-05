@@ -1433,6 +1433,101 @@ class StudyPlannerApp:
             self.period_chart_toggle_btn.config(text="📊 → 🥧 Pie Chart")
         
         self._refresh_analysis_page()
+
+    def _toggle_alltime_chart(self):
+        """Toggle all-time chart between bar and pie"""
+        if self.alltime_chart_mode == "bar":
+            self.alltime_chart_mode = "pie"
+            self.alltime_chart_toggle_btn.config(text="🥧 → 📊 Bar Chart")
+        else:
+            self.alltime_chart_mode = "bar"
+            self.alltime_chart_toggle_btn.config(text="📊 → 🥧 Pie Chart")
+        
+        self._refresh_analysis_page()
+    
+    def _draw_bar_chart(self, canvas, study_time, sessions, completed, interrupted, title):
+        """Draw bar chart for 4 statistics"""
+        canvas.delete("all")
+        
+        # Get canvas dimensions
+        width = canvas.winfo_width()
+        if width <= 1:
+            width = 400  # Default width for half screen
+        height = 280
+        
+        # Chart settings - increased padding for labels
+        padding_left = 40
+        padding_right = 40
+        padding_top = 40
+        padding_bottom = 70
+        
+        chart_width = width - padding_left - padding_right
+        chart_height = height - padding_top - padding_bottom
+        
+        # Data for 4 bars
+        data = [
+            ("Study\nTime", study_time, SUCCESS),
+            ("Sessions", sessions, INFO),
+            ("Completed", completed, PRIMARY_BLUE),
+            ("Interrupted", interrupted, WARNING)
+        ]
+        
+        # Find max value for scaling
+        max_value = max([d[1] for d in data]) if any(d[1] > 0 for d in data) else 1
+        
+        # Calculate bar dimensions with more spacing
+        num_bars = len(data)
+        total_spacing = chart_width * 0.4  # 40% for spacing
+        total_bar_width = chart_width - total_spacing
+        bar_width = total_bar_width / num_bars
+        bar_spacing = total_spacing / (num_bars + 1)
+        
+        # Draw bars
+        for i, (label, value, color) in enumerate(data):
+            # Calculate bar position with even spacing
+            x = padding_left + bar_spacing + i * (bar_width + bar_spacing)
+            
+            # Calculate bar height (proportional to value)
+            if max_value > 0:
+                bar_height = (value / max_value) * chart_height
+            else:
+                bar_height = 0
+            
+            # Draw bar
+            y1 = height - padding_bottom
+            y2 = y1 - bar_height
+            
+            canvas.create_rectangle(
+                x, y1, x + bar_width, y2,
+                fill=color,
+                outline=color,
+                width=2
+            )
+            
+            # Draw value on top of bar
+            canvas.create_text(
+                x + bar_width / 2, max(y2 - 15, padding_top),
+                text=str(value),
+                font=("Segoe UI", 11, "bold"),
+                fill=TEXT_PRIMARY
+            )
+            
+            # Draw label below bar with better spacing
+            canvas.create_text(
+                x + bar_width / 2, y1 + 25,
+                text=label,
+                font=("Segoe UI", 9),
+                fill=TEXT_SECONDARY,
+                justify=tk.CENTER
+            )
+        
+        # Draw title
+        canvas.create_text(
+            width / 2, 15,
+            text=title,
+            font=("Segoe UI", 11, "bold"),
+            fill=TEXT_PRIMARY
+        )
     
     def run(self):
         """run app"""
