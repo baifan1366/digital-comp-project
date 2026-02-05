@@ -1,3 +1,15 @@
+"""
+Dialog windows and notification popups for the Study Planner.
+
+Provides popup notifications for phase transitions and settings dialogs
+for notification preferences.
+"""
+
+import tkinter as tk
+from tkinter import ttk, messagebox
+from typing import Optional
+
+
 class NotificationPopup:
     """
     Popup notification dialog for phase transitions.
