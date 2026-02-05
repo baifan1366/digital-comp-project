@@ -791,6 +791,145 @@ class StudyPlannerApp:
             highlightthickness=0
         )
         self.period_chart_canvas.pack(fill=tk.BOTH, expand=True)
+
+    def _build_alltime_section(self, parent):
+        """Build All Time section"""
+        # Header
+        tk.Label(
+            parent,
+            text="All Time Statistics",
+            bg=BG_LIGHT,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 14, "bold")
+        ).pack(anchor=tk.W, pady=(0, 10))
+        
+        # Statistics cards
+        alltime_card = tk.LabelFrame(
+            parent,
+            text="  Statistics  ",
+            bg=BG_LIGHT,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 11, "bold"),
+            relief=tk.SOLID,
+            borderwidth=2
+        )
+        alltime_card.pack(fill=tk.X, pady=(0, 15))
+        
+        stats_container = tk.Frame(alltime_card, bg=BG_CARD)
+        stats_container.pack(fill=tk.X, padx=15, pady=15)
+        
+        # Create 2x2 grid for statistics
+        stats_items = [
+            ("Total Study Time", "alltime_total_time", "0 minutes", SUCCESS),
+            ("Total Sessions", "alltime_session_count", "0", INFO),
+            ("Total Completed", "alltime_completed_count", "0", PRIMARY_BLUE),
+            ("Total Interrupted", "alltime_interrupted_count", "0", WARNING)
+        ]
+        
+        for i, (title, attr_name, default_value, color) in enumerate(stats_items):
+            row = i // 2
+            col = i % 2
+            
+            stat_frame = tk.Frame(
+                stats_container,
+                bg=BG_WHITE,
+                relief=tk.SOLID,
+                borderwidth=1,
+                highlightbackground=BORDER_LIGHT
+            )
+            stat_frame.grid(row=row, column=col, padx=(0, 10) if col == 0 else 0,
+                           pady=(0, 10) if row == 0 else 0, sticky="ew")
+            
+            tk.Label(
+                stat_frame,
+                text=title,
+                bg=BG_WHITE,
+                fg=TEXT_SECONDARY,
+                font=("Segoe UI", 9)
+            ).pack(anchor=tk.W, padx=12, pady=(10, 3))
+            
+            value_label = tk.Label(
+                stat_frame,
+                text=default_value,
+                bg=BG_WHITE,
+                fg=color,
+                font=("Segoe UI", 14, "bold")
+            )
+            value_label.pack(anchor=tk.W, padx=12, pady=(0, 10))
+            
+            setattr(self, attr_name, value_label)
+        
+        stats_container.columnconfigure(0, weight=1)
+        stats_container.columnconfigure(1, weight=1)
+        
+        # Most used plan
+        plan_frame = tk.Frame(
+            stats_container,
+            bg=BG_WHITE,
+            relief=tk.SOLID,
+            borderwidth=1
+        )
+        plan_frame.grid(row=2, column=0, columnspan=2, pady=(10, 0), sticky="ew")
+        
+        tk.Label(
+            plan_frame,
+            text="Most Used Plan",
+            bg=BG_WHITE,
+            fg=TEXT_SECONDARY,
+            font=("Segoe UI", 9)
+        ).pack(anchor=tk.W, padx=12, pady=(10, 3))
+        
+        self.most_used_plan_label = tk.Label(
+            plan_frame,
+            text="No data yet",
+            bg=BG_WHITE,
+            fg=PRIMARY_BLUE,
+            font=("Segoe UI", 12, "bold")
+        )
+        self.most_used_plan_label.pack(anchor=tk.W, padx=12, pady=(0, 10))
+        
+        # Chart with toggle
+        chart_card = tk.LabelFrame(
+            parent,
+            text="  Visualization  ",
+            bg=BG_LIGHT,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 11, "bold"),
+            relief=tk.SOLID,
+            borderwidth=2
+        )
+        chart_card.pack(fill=tk.BOTH, expand=True)
+        
+        # Chart header with toggle button
+        chart_header = tk.Frame(chart_card, bg=BG_CARD)
+        chart_header.pack(fill=tk.X, padx=15, pady=(10, 0))
+        
+        self.alltime_chart_mode = "bar"  # "bar" or "pie"
+        self.alltime_chart_toggle_btn = tk.Button(
+            chart_header,
+            text="📊 → 🥧 Pie Chart",
+            bg=INFO,
+            fg="white",
+            font=("Segoe UI", 8),
+            relief=tk.FLAT,
+            cursor="hand2",
+            padx=8,
+            pady=4,
+            command=self._toggle_alltime_chart
+        )
+        self.alltime_chart_toggle_btn.pack(side=tk.RIGHT)
+        
+        # Chart canvas
+        chart_container = tk.Frame(chart_card, bg=BG_WHITE)
+        chart_container.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
+        
+        self.alltime_chart_canvas = Canvas(
+            chart_container,
+            bg=BG_WHITE,
+            height=280,
+            highlightthickness=0
+        )
+        self.alltime_chart_canvas.pack(fill=tk.BOTH, expand=True)
         
     def run(self):
         """run app"""
