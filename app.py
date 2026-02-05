@@ -4,6 +4,8 @@ Study Planner Application - With Timer Functionality and Tab Navigation
 import tkinter as tk
 from tkinter import messagebox, ttk, Canvas
 
+from study_planner.utils.validation import validate_numeric_input
+
 # Color definitions - Enhanced modern palette
 PRIMARY_BLUE = "#4A90E2"
 PRIMARY_BLUE_DARK = "#357ABD"
@@ -930,7 +932,227 @@ class StudyPlannerApp:
             highlightthickness=0
         )
         self.alltime_chart_canvas.pack(fill=tk.BOTH, expand=True)
+
+    def _create_history_page(self):
+        """Create history page with run history table"""
+        history_frame = tk.Frame(self.pages_container, bg=BG_LIGHT)
+        self.pages["history"] = history_frame
         
+        # Content
+        content = tk.Frame(history_frame, bg=BG_LIGHT)
+        content.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
+        
+        # Page title
+        tk.Label(
+            content,
+            text="📜 Study History",
+            bg=BG_LIGHT,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 18, "bold")
+        ).pack(anchor=tk.W, pady=(0, 20))
+        
+        # History table card
+        table_card = tk.LabelFrame(
+            content,
+            text="  Run History  ",
+            bg=BG_LIGHT,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 11, "bold"),
+            relief=tk.SOLID,
+            borderwidth=2
+        )
+        table_card.pack(fill=tk.BOTH, expand=True)
+        
+        # Table container
+        table_container = tk.Frame(table_card, bg=BG_WHITE)
+        table_container.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
+        
+        # Create Treeview table
+        columns = ("plan_name", "study_time", "break_time", "cycles", "timestamp")
+        self.history_tree = ttk.Treeview(
+            table_container,
+            columns=columns,
+            show="headings",
+            height=15
+        )
+        
+        # Set column headings
+        self.history_tree.heading("plan_name", text="Plan Name")
+        self.history_tree.heading("study_time", text="Study Time")
+        self.history_tree.heading("break_time", text="Break Time")
+        self.history_tree.heading("cycles", text="Cycles")
+        self.history_tree.heading("timestamp", text="Last Used")
+        
+        # Set column widths
+        self.history_tree.column("plan_name", width=200)
+        self.history_tree.column("study_time", width=100)
+        self.history_tree.column("break_time", width=100)
+        self.history_tree.column("cycles", width=80)
+        self.history_tree.column("timestamp", width=180)
+        
+        # Add scrollbar
+        scrollbar = ttk.Scrollbar(
+            table_container,
+            orient=tk.VERTICAL,
+            command=self.history_tree.yview
+        )
+        self.history_tree.configure(yscrollcommand=scrollbar.set)
+        
+        self.history_tree.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Run Again button
+        btn_frame = tk.Frame(table_card, bg=BG_CARD)
+        btn_frame.pack(fill=tk.X, padx=15, pady=(0, 15))
+        
+        tk.Button(
+            btn_frame,
+            text="▶ Run Again",
+            command=self._run_again_selected,
+            bg=SUCCESS,
+            fg="white",
+            activebackground=SUCCESS_DARK,
+            font=("Segoe UI", 11, "bold"),
+            relief=tk.FLAT,
+            padx=25,
+            pady=12,
+            cursor="hand2"
+        ).pack(side=tk.LEFT)
+
+    def _select_preset(self, plan):
+        """Select preset plan"""
+        self.selected_plan = plan
+        
+        # Build description text
+        desc = f"Selected: {plan.name} ({plan.study_minutes}min study / {plan.break_minutes}min break"
+        if plan.cycles > 1:
+            desc += f" × {plan.cycles} cycles"
+        if plan.long_break_minutes > 0:
+            desc += f" + {plan.long_break_minutes}min long break"
+        desc += ")"
+        
+        self.result_label.config(text=desc, fg=SUCCESS)
+        self.start_btn.config(state=tk.NORMAL)
+        print(f"✓ Selected: {plan.name} - {plan.cycles} cycles" + (f" + {plan.long_break_minutes}min long break" if plan.long_break_minutes > 0 else ""))
+
+    def _create_custom(self):
+        """Create custom plan"""
+        # Get plan name (use default if empty)
+        plan_name = self.plan_name_entry.get().strip()
+        if not plan_name:
+            plan_name = "Custom Plan"
+        
+        study_str = self.study_entry.get().strip()
+        break_str = self.break_entry.get().strip()
+        cycles_str = self.cycles_entry.get().strip()
+        long_break_str = self.long_break_entry.get().strip()
+        
+        study_min = validate_numeric_input(study_str)
+        break_min = validate_numeric_input(break_str)
+        cycles = validate_numeric_input(cycles_str) if cycles_str else 1
+        
+        # Handle long break - minimum value is 1
+        if long_break_str:
+            long_break_min = validate_numeric_input(long_break_str)
+        else:
+            long_break_min = 1
+        
+        if not study_min or not break_min:
+            messagebox.showerror("Error", "Please enter valid study and break times")
+            return
+        
+        if not cycles or cycles < 1:
+            messagebox.showerror("Error", "Cycles must be at least 1")
+            return
+        
+        if not long_break_min or long_break_min < 1:
+            messagebox.showerror("Error", "Long break time must be at least 1 minute")
+            return
+        
+        try:
+            plan = self.plan_manager.create_custom_plan(
+                name=plan_name,
+                study_min=study_min,
+                break_min=break_min,
+                cycles=cycles,
+                long_break_min=long_break_min
+            )
+            self.selected_plan = plan
+            
+            # Build description text
+            desc = f"Created: {plan_name} - {study_min}min study / {break_min}min break × {cycles} cycles"
+            if long_break_min > 0:
+                desc += f" + {long_break_min}min long break"
+            
+            self.result_label.config(text=desc, fg=SUCCESS)
+            self.start_btn.config(state=tk.NORMAL)
+            print(f"✓ Created custom plan: {plan_name} - {study_min}/{break_min} × {cycles} cycles" + (f" + {long_break_min}min long break" if long_break_min > 0 else ""))
+        except ValueError as e:
+            messagebox.showerror("Error", str(e))
+
+    def _on_start_session(self):
+        """Start study session"""
+        if not self.selected_plan:
+            messagebox.showwarning("Notice", "Please select a plan first")
+            return
+        
+        try:
+            # Start study session
+            self.study_planner.start_session(self.selected_plan)
+            
+            # Update UI state
+            self.start_btn.config(state=tk.DISABLED)
+            self.pause_btn.config(state=tk.NORMAL)
+            self.stop_btn.config(state=tk.NORMAL)
+            self.resume_btn.config(state=tk.DISABLED)
+            
+            # Refresh History page to show the new plan
+            self._refresh_history_page()
+            
+            print(f"✓ Started study: {self.selected_plan.name}")
+            
+        except RuntimeError as e:
+            messagebox.showerror("Error", str(e))
+    
+    def _on_pause(self):
+        """Pause session"""
+        try:
+            self.study_planner.pause_session()
+            self.pause_btn.config(state=tk.DISABLED)
+            self.resume_btn.config(state=tk.NORMAL)
+            self.phase_label.config(text="Paused")
+            print("⏸ Paused")
+        except RuntimeError as e:
+            messagebox.showerror("Error", str(e))
+    
+    def _on_resume(self):
+        """Resume session"""
+        try:
+            self.study_planner.resume_session()
+            self.pause_btn.config(state=tk.NORMAL)
+            self.resume_btn.config(state=tk.DISABLED)
+            print("▶ Resumed")
+        except RuntimeError as e:
+            messagebox.showerror("Error", str(e))
+    
+    def _on_stop(self):
+        """Stop session"""
+        self.study_planner.stop_session()
+        
+        # Reset UI
+        self.timer_label.config(text="00:00")
+        self.phase_label.config(text="Ready to Start")
+        self.start_btn.config(state=tk.NORMAL if self.selected_plan else tk.DISABLED)
+        self.pause_btn.config(state=tk.DISABLED)
+        self.resume_btn.config(state=tk.DISABLED)
+        self.stop_btn.config(state=tk.DISABLED)
+        
+        # Refresh Analysis and History pages with latest data
+        self._refresh_analysis_page()
+        self._refresh_history_page()
+        
+        print("⏹ Stopped")
+    
     def run(self):
         """run app"""
         self.root.mainloop()
