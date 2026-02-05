@@ -4,6 +4,8 @@ Study Planner Application - With Timer Functionality and Tab Navigation
 import tkinter as tk
 from tkinter import messagebox, ttk, Canvas
 
+from study_planner.utils.validation import validate_numeric_input
+
 # Color definitions - Enhanced modern palette
 PRIMARY_BLUE = "#4A90E2"
 PRIMARY_BLUE_DARK = "#357ABD"
@@ -1016,7 +1018,78 @@ class StudyPlannerApp:
             pady=12,
             cursor="hand2"
         ).pack(side=tk.LEFT)
+
+    def _select_preset(self, plan):
+        """Select preset plan"""
+        self.selected_plan = plan
         
+        # Build description text
+        desc = f"Selected: {plan.name} ({plan.study_minutes}min study / {plan.break_minutes}min break"
+        if plan.cycles > 1:
+            desc += f" × {plan.cycles} cycles"
+        if plan.long_break_minutes > 0:
+            desc += f" + {plan.long_break_minutes}min long break"
+        desc += ")"
+        
+        self.result_label.config(text=desc, fg=SUCCESS)
+        self.start_btn.config(state=tk.NORMAL)
+        print(f"✓ Selected: {plan.name} - {plan.cycles} cycles" + (f" + {plan.long_break_minutes}min long break" if plan.long_break_minutes > 0 else ""))
+
+    def _create_custom(self):
+        """Create custom plan"""
+        # Get plan name (use default if empty)
+        plan_name = self.plan_name_entry.get().strip()
+        if not plan_name:
+            plan_name = "Custom Plan"
+        
+        study_str = self.study_entry.get().strip()
+        break_str = self.break_entry.get().strip()
+        cycles_str = self.cycles_entry.get().strip()
+        long_break_str = self.long_break_entry.get().strip()
+        
+        study_min = validate_numeric_input(study_str)
+        break_min = validate_numeric_input(break_str)
+        cycles = validate_numeric_input(cycles_str) if cycles_str else 1
+        
+        # Handle long break - minimum value is 1
+        if long_break_str:
+            long_break_min = validate_numeric_input(long_break_str)
+        else:
+            long_break_min = 1
+        
+        if not study_min or not break_min:
+            messagebox.showerror("Error", "Please enter valid study and break times")
+            return
+        
+        if not cycles or cycles < 1:
+            messagebox.showerror("Error", "Cycles must be at least 1")
+            return
+        
+        if not long_break_min or long_break_min < 1:
+            messagebox.showerror("Error", "Long break time must be at least 1 minute")
+            return
+        
+        try:
+            plan = self.plan_manager.create_custom_plan(
+                name=plan_name,
+                study_min=study_min,
+                break_min=break_min,
+                cycles=cycles,
+                long_break_min=long_break_min
+            )
+            self.selected_plan = plan
+            
+            # Build description text
+            desc = f"Created: {plan_name} - {study_min}min study / {break_min}min break × {cycles} cycles"
+            if long_break_min > 0:
+                desc += f" + {long_break_min}min long break"
+            
+            self.result_label.config(text=desc, fg=SUCCESS)
+            self.start_btn.config(state=tk.NORMAL)
+            print(f"✓ Created custom plan: {plan_name} - {study_min}/{break_min} × {cycles} cycles" + (f" + {long_break_min}min long break" if long_break_min > 0 else ""))
+        except ValueError as e:
+            messagebox.showerror("Error", str(e))
+
     def run(self):
         """run app"""
         self.root.mainloop()
