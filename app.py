@@ -658,6 +658,139 @@ class StudyPlannerApp:
         
         # === RIGHT COLUMN: All Time ===
         self._build_alltime_section(right_column)
+
+    def _build_period_section(self, parent):
+        """Build Last 7/30 Days section with toggle"""
+        # Header with toggle button
+        header_frame = tk.Frame(parent, bg=BG_LIGHT)
+        header_frame.pack(fill=tk.X, pady=(0, 10))
+        
+        self.period_label = tk.Label(
+            header_frame,
+            text="Last 7 Days Statistics",
+            bg=BG_LIGHT,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 14, "bold")
+        )
+        self.period_label.pack(side=tk.LEFT)
+        
+        # Toggle button
+        self.period_mode = "7days"  # "7days" or "30days"
+        self.period_toggle_btn = tk.Button(
+            header_frame,
+            text="Switch to 30 Days",
+            bg=PRIMARY_BLUE,
+            fg="white",
+            font=("Segoe UI", 9),
+            relief=tk.FLAT,
+            cursor="hand2",
+            padx=10,
+            pady=5,
+            command=self._toggle_period
+        )
+        self.period_toggle_btn.pack(side=tk.RIGHT)
+        
+        # Statistics cards
+        week_card = tk.LabelFrame(
+            parent,
+            text="  Statistics  ",
+            bg=BG_LIGHT,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 11, "bold"),
+            relief=tk.SOLID,
+            borderwidth=2
+        )
+        week_card.pack(fill=tk.X, pady=(0, 15))
+        
+        stats_container = tk.Frame(week_card, bg=BG_CARD)
+        stats_container.pack(fill=tk.X, padx=15, pady=15)
+        
+        # Create 2x2 grid for statistics
+        stats_items = [
+            ("Total Study Time", "period_total_time", "0 minutes", SUCCESS),
+            ("Study Sessions", "period_session_count", "0", INFO),
+            ("Completed", "period_completed_count", "0", PRIMARY_BLUE),
+            ("Interrupted", "period_interrupted_count", "0", WARNING)
+        ]
+        
+        for i, (title, attr_name, default_value, color) in enumerate(stats_items):
+            row = i // 2
+            col = i % 2
+            
+            stat_frame = tk.Frame(
+                stats_container,
+                bg=BG_WHITE,
+                relief=tk.SOLID,
+                borderwidth=1,
+                highlightbackground=BORDER_LIGHT
+            )
+            stat_frame.grid(row=row, column=col, padx=(0, 10) if col == 0 else 0,
+                           pady=(0, 10) if row == 0 else 0, sticky="ew")
+            
+            tk.Label(
+                stat_frame,
+                text=title,
+                bg=BG_WHITE,
+                fg=TEXT_SECONDARY,
+                font=("Segoe UI", 9)
+            ).pack(anchor=tk.W, padx=12, pady=(10, 3))
+            
+            value_label = tk.Label(
+                stat_frame,
+                text=default_value,
+                bg=BG_WHITE,
+                fg=color,
+                font=("Segoe UI", 14, "bold")
+            )
+            value_label.pack(anchor=tk.W, padx=12, pady=(0, 10))
+            
+            setattr(self, attr_name, value_label)
+        
+        stats_container.columnconfigure(0, weight=1)
+        stats_container.columnconfigure(1, weight=1)
+        
+        # Chart with toggle
+        chart_card = tk.LabelFrame(
+            parent,
+            text="  Visualization  ",
+            bg=BG_LIGHT,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 11, "bold"),
+            relief=tk.SOLID,
+            borderwidth=2
+        )
+        chart_card.pack(fill=tk.BOTH, expand=True)
+        
+        # Chart header with toggle button
+        chart_header = tk.Frame(chart_card, bg=BG_CARD)
+        chart_header.pack(fill=tk.X, padx=15, pady=(10, 0))
+        
+        self.period_chart_mode = "bar"  # "bar" or "pie"
+        self.period_chart_toggle_btn = tk.Button(
+            chart_header,
+            text="📊 → 🥧 Pie Chart",
+            bg=INFO,
+            fg="white",
+            font=("Segoe UI", 8),
+            relief=tk.FLAT,
+            cursor="hand2",
+            padx=8,
+            pady=4,
+            command=self._toggle_period_chart
+        )
+        self.period_chart_toggle_btn.pack(side=tk.RIGHT)
+        
+        # Chart canvas
+        chart_container = tk.Frame(chart_card, bg=BG_WHITE)
+        chart_container.pack(fill=tk.BOTH, expand=True, padx=15, pady=15)
+        
+        self.period_chart_canvas = Canvas(
+            chart_container,
+            bg=BG_WHITE,
+            height=280,
+            highlightthickness=0
+        )
+        self.period_chart_canvas.pack(fill=tk.BOTH, expand=True)
         
     def run(self):
         """run app"""
