@@ -1410,6 +1410,30 @@ class StudyPlannerApp:
             "interrupted": interrupted
         }
     
+    def _toggle_period(self):
+        """Toggle between 7 days and 30 days view"""
+        if self.period_mode == "7days":
+            self.period_mode = "30days"
+            self.period_label.config(text="Last 30 Days Statistics")
+            self.period_toggle_btn.config(text="Switch to 7 Days")
+        else:
+            self.period_mode = "7days"
+            self.period_label.config(text="Last 7 Days Statistics")
+            self.period_toggle_btn.config(text="Switch to 30 Days")
+        
+        self._refresh_analysis_page()
+    
+    def _toggle_period_chart(self):
+        """Toggle period chart between bar and pie"""
+        if self.period_chart_mode == "bar":
+            self.period_chart_mode = "pie"
+            self.period_chart_toggle_btn.config(text="🥧 → 📊 Bar Chart")
+        else:
+            self.period_chart_mode = "bar"
+            self.period_chart_toggle_btn.config(text="📊 → 🥧 Pie Chart")
+        
+        self._refresh_analysis_page()
+    
     def run(self):
         """run app"""
         self.root.mainloop()
