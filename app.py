@@ -242,6 +242,422 @@ class StudyPlannerApp:
         # Store content reference for home page
         self.home_content = content
         
+        # Timer display area with shadow effect
+        timer_container = tk.Frame(content, bg=BG_LIGHT)
+        timer_container.pack(fill=tk.X, pady=(0, 15))
+        
+        self.timer_frame = tk.Frame(
+            timer_container, 
+            bg=BG_CARD, 
+            relief=tk.SOLID,
+            borderwidth=2,
+            highlightbackground=BORDER_COLOR,
+            highlightcolor=BORDER_COLOR,
+            highlightthickness=0
+        )
+        self.timer_frame.pack(fill=tk.X, padx=2, pady=2)
+        
+        # Timer display
+        self.timer_label = tk.Label(
+            self.timer_frame,
+            text="00:00",
+            bg=BG_CARD,
+            fg=PRIMARY_BLUE,
+            font=("Segoe UI", 48, "bold")
+        )
+        self.timer_label.pack(pady=(20, 8))
+        
+        # Phase label
+        self.phase_label = tk.Label(
+            self.timer_frame,
+            text="Ready to Start",
+            bg=BG_CARD,
+            fg=TEXT_SECONDARY,
+            font=("Segoe UI", 12)
+        )
+        self.phase_label.pack(pady=(0, 20))
+        
+        # Preset plans area with modern card design
+        preset_frame = tk.LabelFrame(
+            content, 
+            text="  Quick Start  ", 
+            bg=BG_LIGHT, 
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 11, "bold"),
+            relief=tk.SOLID,
+            borderwidth=2,
+            highlightbackground=BORDER_COLOR,
+            highlightthickness=0
+        )
+        preset_frame.pack(fill=tk.X, pady=(0, 15))
+        
+        preset_buttons_frame = tk.Frame(preset_frame, bg=BG_LIGHT)
+        preset_buttons_frame.pack(fill=tk.X, padx=5, pady=10)
+        
+        presets = self.plan_manager.get_preset_plans()
+        icons = {"Pomodoro": "🍅", "Deep Focus": "🎯", "Light Review": "📖"}
+        
+        for plan in presets:
+            icon = icons.get(plan.name, "📝")
+            # Build button text
+            btn_text = f"{icon}\n{plan.name}\n{plan.study_minutes}min/{plan.break_minutes}min"
+            if plan.cycles > 1:
+                btn_text += f"\n×{plan.cycles} cycles"
+            if plan.long_break_minutes > 0:
+                btn_text += f"\n+{plan.long_break_minutes}min long break"
+            
+            # Create card-style button
+            btn = tk.Button(
+                preset_buttons_frame,
+                text=btn_text,
+                command=lambda p=plan: self._select_preset(p),
+                bg=BG_CARD,
+                fg=TEXT_PRIMARY,
+                activebackground="#E3F2FD",
+                activeforeground=PRIMARY_BLUE,
+                font=("Segoe UI", 9),
+                width=18,
+                height=5,
+                relief=tk.SOLID,
+                borderwidth=2,
+                highlightbackground=BORDER_LIGHT,
+                highlightcolor=PRIMARY_BLUE,
+                highlightthickness=0,
+                cursor="hand2"
+            )
+            btn.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.BOTH)
+        
+        # Custom plan area with modern card design
+        custom_frame = tk.LabelFrame(
+            content, 
+            text="  Custom Plan  ", 
+            bg=BG_LIGHT, 
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 11, "bold"),
+            relief=tk.SOLID,
+            borderwidth=2,
+            highlightbackground=BORDER_COLOR,
+            highlightthickness=0
+        )
+        custom_frame.pack(fill=tk.X, pady=(0, 15))
+        
+        # Card container with max width
+        form_card = tk.Frame(
+            custom_frame, 
+            bg=BG_CARD,
+            relief=tk.SOLID,
+            borderwidth=2,
+            highlightbackground=BORDER_LIGHT,
+            highlightthickness=0
+        )
+        form_card.pack(fill=tk.X, padx=10, pady=10)
+        
+        # Inner container with max width constraint
+        form_inner = tk.Frame(form_card, bg=BG_CARD)
+        form_inner.pack(padx=15, pady=15)
+        
+        # Row 1: Plan Name (full width)
+        row1 = tk.Frame(form_inner, bg=BG_CARD)
+        row1.pack(fill=tk.X, pady=(0, 12))
+        
+        tk.Label(
+            row1,
+            text="Plan Name:",
+            bg=BG_CARD,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 10),
+            width=15,
+            anchor=tk.W
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        
+        self.plan_name_entry = tk.Entry(
+            row1,
+            font=("Segoe UI", 10),
+            relief=tk.SOLID,
+            borderwidth=1,
+            highlightbackground=BORDER_COLOR,
+            highlightcolor=PRIMARY_BLUE,
+            highlightthickness=1,
+            width=50
+        )
+        self.plan_name_entry.insert(0, "Custom Plan")
+        self.plan_name_entry.pack(side=tk.LEFT, fill=tk.X, expand=True, ipady=6)
+        
+        # Row 2: Study Time and Break Time
+        row2 = tk.Frame(form_inner, bg=BG_CARD)
+        row2.pack(fill=tk.X, pady=(0, 12))
+        
+        # Study Time
+        study_frame = tk.Frame(row2, bg=BG_CARD)
+        study_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 20))
+        
+        tk.Label(
+            study_frame,
+            text="Study Time (min):",
+            bg=BG_CARD,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 10),
+            width=15,
+            anchor=tk.W
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        
+        self.study_entry = tk.Entry(
+            study_frame,
+            font=("Segoe UI", 10),
+            relief=tk.SOLID,
+            borderwidth=1,
+            highlightbackground=BORDER_COLOR,
+            highlightcolor=PRIMARY_BLUE,
+            highlightthickness=1,
+            width=15
+        )
+        self.study_entry.pack(side=tk.LEFT, ipady=6)
+        
+        # Break Time
+        break_frame = tk.Frame(row2, bg=BG_CARD)
+        break_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        tk.Label(
+            break_frame,
+            text="Break Time (min):",
+            bg=BG_CARD,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 10),
+            width=15,
+            anchor=tk.W
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        
+        self.break_entry = tk.Entry(
+            break_frame,
+            font=("Segoe UI", 10),
+            relief=tk.SOLID,
+            borderwidth=1,
+            highlightbackground=BORDER_COLOR,
+            highlightcolor=PRIMARY_BLUE,
+            highlightthickness=1,
+            width=15
+        )
+        self.break_entry.pack(side=tk.LEFT, ipady=6)
+        
+        # Row 3: Cycles and Long Break
+        row3 = tk.Frame(form_inner, bg=BG_CARD)
+        row3.pack(fill=tk.X, pady=(0, 12))
+        
+        # Cycles
+        cycles_frame = tk.Frame(row3, bg=BG_CARD)
+        cycles_frame.pack(side=tk.LEFT, fill=tk.X, expand=True, padx=(0, 20))
+        
+        tk.Label(
+            cycles_frame,
+            text="Cycles:",
+            bg=BG_CARD,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 10),
+            width=15,
+            anchor=tk.W
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        
+        self.cycles_entry = tk.Entry(
+            cycles_frame,
+            font=("Segoe UI", 10),
+            relief=tk.SOLID,
+            borderwidth=1,
+            highlightbackground=BORDER_COLOR,
+            highlightcolor=PRIMARY_BLUE,
+            highlightthickness=1,
+            width=15
+        )
+        self.cycles_entry.insert(0, "1")
+        self.cycles_entry.pack(side=tk.LEFT, ipady=6)
+        
+        # Long Break
+        long_break_frame = tk.Frame(row3, bg=BG_CARD)
+        long_break_frame.pack(side=tk.LEFT, fill=tk.X, expand=True)
+        
+        tk.Label(
+            long_break_frame,
+            text="Long Break (min):",
+            bg=BG_CARD,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 10),
+            width=15,
+            anchor=tk.W
+        ).pack(side=tk.LEFT, padx=(0, 10))
+        
+        self.long_break_entry = tk.Entry(
+            long_break_frame,
+            font=("Segoe UI", 10),
+            relief=tk.SOLID,
+            borderwidth=1,
+            highlightbackground=BORDER_COLOR,
+            highlightcolor=PRIMARY_BLUE,
+            highlightthickness=1,
+            width=15
+        )
+        self.long_break_entry.insert(0, "1")
+        self.long_break_entry.pack(side=tk.LEFT, ipady=6)
+        
+        # Row 4: Help text and Create button
+        row4 = tk.Frame(form_inner, bg=BG_CARD)
+        row4.pack(fill=tk.X, pady=(0, 0))
+        
+        tk.Label(
+            row4,
+            text="(After all cycles complete)",
+            bg=BG_CARD,
+            fg=TEXT_SECONDARY,
+            font=("Segoe UI", 9)
+        ).pack(side=tk.LEFT)
+        
+        tk.Button(
+            row4,
+            text="✓ Create Plan",
+            command=self._create_custom,
+            bg=PRIMARY_BLUE,
+            fg="white",
+            activebackground=PRIMARY_BLUE_DARK,
+            font=("Segoe UI", 11, "bold"),
+            relief=tk.FLAT,
+            padx=30,
+            pady=10,
+            cursor="hand2"
+        ).pack(side=tk.RIGHT)
+        
+        # Result display
+        self.result_label = tk.Label(
+            content,
+            text="Please select a preset plan or create a custom plan",
+            bg=BG_LIGHT,
+            fg=TEXT_SECONDARY,
+            font=("Segoe UI", 10)
+        )
+        self.result_label.pack(pady=12)
+        
+        # Control buttons with modern design
+        controls_frame = tk.Frame(content, bg=BG_LIGHT)
+        controls_frame.pack(fill=tk.X, pady=(5, 10))
+        
+        button_style = {
+            "font": ("Segoe UI", 11, "bold"),
+            "relief": tk.FLAT,
+            "borderwidth": 0,
+            "padx": 25,
+            "pady": 15,
+            "cursor": "hand2"
+        }
+        
+        self.start_btn = tk.Button(
+            controls_frame,
+            text="▶ Start Study",
+            command=self._on_start_session,
+            bg=SUCCESS,
+            fg="white",
+            activebackground=SUCCESS_DARK,
+            state=tk.DISABLED,
+            **button_style
+        )
+        self.start_btn.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+        
+        self.pause_btn = tk.Button(
+            controls_frame,
+            text="⏸ Pause",
+            command=self._on_pause,
+            bg=WARNING,
+            fg="white",
+            activebackground=WARNING_DARK,
+            state=tk.DISABLED,
+            **button_style
+        )
+        self.pause_btn.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+        
+        self.resume_btn = tk.Button(
+            controls_frame,
+            text="▶ Resume",
+            command=self._on_resume,
+            bg=INFO,
+            fg="white",
+            activebackground=INFO_DARK,
+            state=tk.DISABLED,
+            **button_style
+        )
+        self.resume_btn.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+        
+        self.stop_btn = tk.Button(
+            controls_frame,
+            text="⏹ Stop",
+            command=self._on_stop,
+            bg=ERROR,
+            fg="white",
+            activebackground=ERROR_DARK,
+            state=tk.DISABLED,
+            **button_style
+        )
+        self.stop_btn.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
+        
+    def _create_analysis_page(self):
+        """Create analysis page with statistics and charts"""
+        analysis_frame = tk.Frame(self.pages_container, bg=BG_LIGHT)
+        self.pages["analysis"] = analysis_frame
+        
+        # Create canvas for scrolling
+        canvas = tk.Canvas(analysis_frame, bg=BG_LIGHT, highlightthickness=0)
+        scrollbar = tk.Scrollbar(analysis_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=BG_LIGHT)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Enable mouse wheel scrolling for Analysis page
+        def _on_mousewheel_analysis(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        def _bind_mousewheel_analysis(event):
+            canvas.bind_all("<MouseWheel>", _on_mousewheel_analysis)
+        
+        def _unbind_mousewheel_analysis(event):
+            canvas.unbind_all("<MouseWheel>")
+        
+        canvas.bind("<Enter>", _bind_mousewheel_analysis)
+        canvas.bind("<Leave>", _unbind_mousewheel_analysis)
+        
+        # Content
+        content = tk.Frame(scrollable_frame, bg=BG_LIGHT)
+        content.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
+        
+        # Page title
+        tk.Label(
+            content,
+            text="📊 Study Analysis",
+            bg=BG_LIGHT,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 18, "bold")
+        ).pack(anchor=tk.W, pady=(0, 20))
+        
+        # Two column layout
+        columns_frame = tk.Frame(content, bg=BG_LIGHT)
+        columns_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Left column - This Week/Month
+        left_column = tk.Frame(columns_frame, bg=BG_LIGHT)
+        left_column.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
+        
+        # Right column - All Time
+        right_column = tk.Frame(columns_frame, bg=BG_LIGHT)
+        right_column.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(10, 0))
+        
+        # === LEFT COLUMN: This Week/Month ===
+        self._build_period_section(left_column)
+        
+        # === RIGHT COLUMN: All Time ===
+        self._build_alltime_section(right_column)
         
     def run(self):
         """run app"""
