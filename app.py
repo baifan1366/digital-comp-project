@@ -242,6 +242,70 @@ class StudyPlannerApp:
         # Store content reference for home page
         self.home_content = content
         
+    def _create_analysis_page(self):
+        """Create analysis page with statistics and charts"""
+        analysis_frame = tk.Frame(self.pages_container, bg=BG_LIGHT)
+        self.pages["analysis"] = analysis_frame
+        
+        # Create canvas for scrolling
+        canvas = tk.Canvas(analysis_frame, bg=BG_LIGHT, highlightthickness=0)
+        scrollbar = tk.Scrollbar(analysis_frame, orient="vertical", command=canvas.yview)
+        scrollable_frame = tk.Frame(canvas, bg=BG_LIGHT)
+        
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
+        
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        canvas.pack(side=tk.LEFT, fill=tk.BOTH, expand=True)
+        
+        # Enable mouse wheel scrolling for Analysis page
+        def _on_mousewheel_analysis(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        
+        def _bind_mousewheel_analysis(event):
+            canvas.bind_all("<MouseWheel>", _on_mousewheel_analysis)
+        
+        def _unbind_mousewheel_analysis(event):
+            canvas.unbind_all("<MouseWheel>")
+        
+        canvas.bind("<Enter>", _bind_mousewheel_analysis)
+        canvas.bind("<Leave>", _unbind_mousewheel_analysis)
+        
+        # Content
+        content = tk.Frame(scrollable_frame, bg=BG_LIGHT)
+        content.pack(fill=tk.BOTH, expand=True, padx=25, pady=20)
+        
+        # Page title
+        tk.Label(
+            content,
+            text="📊 Study Analysis",
+            bg=BG_LIGHT,
+            fg=TEXT_PRIMARY,
+            font=("Segoe UI", 18, "bold")
+        ).pack(anchor=tk.W, pady=(0, 20))
+        
+        # Two column layout
+        columns_frame = tk.Frame(content, bg=BG_LIGHT)
+        columns_frame.pack(fill=tk.BOTH, expand=True)
+        
+        # Left column - This Week/Month
+        left_column = tk.Frame(columns_frame, bg=BG_LIGHT)
+        left_column.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(0, 10))
+        
+        # Right column - All Time
+        right_column = tk.Frame(columns_frame, bg=BG_LIGHT)
+        right_column.pack(side=tk.LEFT, fill=tk.BOTH, expand=True, padx=(10, 0))
+        
+        # === LEFT COLUMN: This Week/Month ===
+        self._build_period_section(left_column)
+        
+        # === RIGHT COLUMN: All Time ===
+        self._build_alltime_section(right_column)
         
     def run(self):
         """run app"""
