@@ -1,11 +1,21 @@
 """
 Study Planner Application - With Timer Functionality and Tab Navigation
 """
-from datetime import datetime, timedelta
-import os
-import queue
 import tkinter as tk
 from tkinter import messagebox, ttk, Canvas
+from study_planner.core.plans import PlanManager, StudyPlan
+from study_planner.core.planner import StudyPlanner
+from study_planner.core.notifier import Notifier
+from study_planner.core.state import SessionState
+from study_planner.data.history import HistoryManager
+from study_planner.data.statistics import StatisticsTracker
+from study_planner.data.storage import Storage
+from study_planner.utils.validation import validate_numeric_input
+from study_planner.utils.time_utils import format_time, format_duration
+from datetime import datetime, timedelta
+import platformdirs
+import os
+import queue
 
 from study_planner.utils.validation import validate_numeric_input
 
