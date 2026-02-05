@@ -1624,6 +1624,84 @@ class StudyPlannerApp:
             fill=TEXT_PRIMARY
         )
     
+    def _refresh_history_page(self):
+        """Refresh history page with latest run history"""
+        # Clear existing data
+        for item in self.history_tree.get_children():
+            self.history_tree.delete(item)
+        
+        # Get history entries with timestamps
+        history_entries = self.history_manager._history[:50]
+        
+        # Add to table
+        for entry in history_entries:
+            plan = StudyPlan.from_dict(entry["plan"])
+            timestamp_str = entry.get("timestamp", "")
+            
+            # Format timestamp
+            try:
+                timestamp = datetime.fromisoformat(timestamp_str)
+                formatted_time = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+            except:
+                formatted_time = "Recently used"
+            
+            self.history_tree.insert("", tk.END, values=(
+                plan.name,
+                f"{plan.study_minutes} min",
+                f"{plan.break_minutes} min",
+                plan.cycles,
+                formatted_time
+            ))
+    
+    def _run_again_selected(self):
+        """Run the selected plan from history again"""
+        selection = self.history_tree.selection()
+        if not selection:
+            messagebox.showwarning("Notice", "Please select a plan from the history table")
+            return
+        
+        # Get selected item index
+        item = selection[0]
+        item_index = self.history_tree.index(item)
+        
+        # Get plan from history
+        history_entries = self.history_manager._history[:50]
+        if item_index < len(history_entries):
+            entry = history_entries[item_index]
+            plan = StudyPlan.from_dict(entry["plan"])
+            
+            # Switch to home page
+            self._switch_page("home")
+            
+            # Select the plan
+            self.selected_plan = plan
+            
+            # Update form fields
+            self.study_entry.delete(0, tk.END)
+            self.study_entry.insert(0, str(plan.study_minutes))
+            self.break_entry.delete(0, tk.END)
+            self.break_entry.insert(0, str(plan.break_minutes))
+            self.cycles_entry.delete(0, tk.END)
+            self.cycles_entry.insert(0, str(plan.cycles))
+            self.long_break_entry.delete(0, tk.END)
+            self.long_break_entry.insert(0, str(plan.long_break_minutes))
+            
+            # Update result label
+            desc = f"Selected: {plan.name} ({plan.study_minutes}min study / {plan.break_minutes}min break"
+            if plan.cycles > 1:
+                desc += f" × {plan.cycles} cycles"
+            if plan.long_break_minutes > 0:
+                desc += f" + {plan.long_break_minutes}min long break"
+            desc += ")"
+            
+            self.result_label.config(text=desc, fg=SUCCESS)
+            self.start_btn.config(state=tk.NORMAL)
+            
+            # Auto-start the plan
+            self._on_start_session()
+            
+            print(f"✓ Running again: {plan.name}")
+    
     def run(self):
         """run app"""
         self.root.mainloop()
