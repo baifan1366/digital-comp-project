@@ -1528,6 +1528,101 @@ class StudyPlannerApp:
             font=("Segoe UI", 11, "bold"),
             fill=TEXT_PRIMARY
         )
+
+    def _draw_pie_chart(self, canvas, study_time, sessions, completed, interrupted, title):
+        """Draw pie chart for 4 statistics"""
+        canvas.delete("all")
+        
+        # Get canvas dimensions
+        width = canvas.winfo_width()
+        if width <= 1:
+            width = 400
+        height = 280
+        
+        # Data for pie chart
+        data = [
+            ("Study Time", study_time, SUCCESS),
+            ("Sessions", sessions, INFO),
+            ("Completed", completed, PRIMARY_BLUE),
+            ("Interrupted", interrupted, WARNING)
+        ]
+        
+        # Calculate total
+        total = sum([d[1] for d in data])
+        
+        if total == 0:
+            # Draw "No data" message
+            canvas.create_text(
+                width / 2, height / 2,
+                text="No data available",
+                font=("Segoe UI", 12),
+                fill=TEXT_SECONDARY
+            )
+            return
+        
+        # Pie chart settings
+        center_x = width / 2
+        center_y = height / 2 + 10
+        radius = min(width, height) / 3
+        
+        # Draw pie slices
+        start_angle = 0
+        for label, value, color in data:
+            if value > 0:
+                # Calculate slice angle
+                slice_angle = (value / total) * 360
+                
+                # Draw slice
+                canvas.create_arc(
+                    center_x - radius, center_y - radius,
+                    center_x + radius, center_y + radius,
+                    start=start_angle, extent=slice_angle,
+                    fill=color, outline="white", width=2
+                )
+                
+                # Calculate label position
+                label_angle = start_angle + slice_angle / 2
+                label_x = center_x + (radius * 0.7) * tk._default_root.tk.call('expr', f'cos({label_angle} * 3.14159 / 180)')
+                label_y = center_y - (radius * 0.7) * tk._default_root.tk.call('expr', f'sin({label_angle} * 3.14159 / 180)')
+                
+                # Draw percentage
+                percentage = (value / total) * 100
+                canvas.create_text(
+                    label_x, label_y,
+                    text=f"{percentage:.0f}%",
+                    font=("Segoe UI", 9, "bold"),
+                    fill="white"
+                )
+                
+                start_angle += slice_angle
+        
+        # Draw legend
+        legend_x = 20
+        legend_y = height - 60
+        for i, (label, value, color) in enumerate(data):
+            if value > 0:
+                # Color box
+                canvas.create_rectangle(
+                    legend_x, legend_y + i * 15,
+                    legend_x + 10, legend_y + i * 15 + 10,
+                    fill=color, outline=color
+                )
+                # Label
+                canvas.create_text(
+                    legend_x + 15, legend_y + i * 15 + 5,
+                    text=f"{label}: {value}",
+                    font=("Segoe UI", 8),
+                    fill=TEXT_PRIMARY,
+                    anchor=tk.W
+                )
+        
+        # Draw title
+        canvas.create_text(
+            width / 2, 15,
+            text=title,
+            font=("Segoe UI", 11, "bold"),
+            fill=TEXT_PRIMARY
+        )
     
     def run(self):
         """run app"""
