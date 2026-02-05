@@ -1153,6 +1153,80 @@ class StudyPlannerApp:
         
         print("⏹ Stopped")
     
+    def _on_timer_tick(self, remaining_seconds: int):
+        """Timer tick callback - called in background thread"""
+        # Put UI update into queue
+        self.update_queue.put(("tick", remaining_seconds))
+    
+    def _on_phase_complete(self):
+        """Phase complete callback - called in background thread"""
+        # Put phase complete event into queue
+        self.update_queue.put(("phase_complete", None))
+    
+    def _process_updates(self):
+        """Process UI update queue - called in main thread"""
+        try:
+            while True:
+                event_type, data = self.update_queue.get_nowait()
+                
+                if event_type == "tick":
+                    remaining_seconds = data
+                    minutes = remaining_seconds // 60
+                    seconds = remaining_seconds % 60
+                    self.timer_label.config(text=f"{minutes:02d}:{seconds:02d}")
+                    
+                    # Update phase display (including cycle info)
+                    state = self.study_planner.get_current_state()
+                    current_cycle = self.study_planner._current_cycle
+                    total_cycles = self.study_planner._total_cycles
+                    
+                    if state.name == "STUDY":
+                        if total_cycles > 1:
+                            self.phase_label.config(text=f"Studying (Round {current_cycle}/{total_cycles})", fg=PRIMARY_BLUE)
+                        else:
+                            self.phase_label.config(text="Studying", fg=PRIMARY_BLUE)
+                    elif state.name == "BREAK":
+                        if total_cycles > 1:
+                            self.phase_label.config(text=f"Break Time (Round {current_cycle}/{total_cycles})", fg=SUCCESS)
+                        else:
+                            self.phase_label.config(text="Break Time", fg=SUCCESS)
+                    elif state.name == "LONG_BREAK":
+                        self.phase_label.config(text="Long Break", fg=INFO)
+                    elif state.name == "COMPLETED":
+                        self.phase_label.config(text="Completed!", fg=SUCCESS)
+                        self._on_session_complete()
+                
+                elif event_type == "phase_complete":
+                    # Phase complete, check state
+                    state = self.study_planner.get_current_state()
+                    if state.name == "COMPLETED":
+                        self._on_session_complete()
+                
+        except queue.Empty:
+            pass
+        
+        # Check queue every 100ms
+        self.root.after(100, self._process_updates)
+    
+    def _on_session_complete(self):
+        """Session complete"""
+        self.timer_label.config(text="Done!")
+        self.phase_label.config(text="Congratulations! Study plan completed!", fg=SUCCESS)
+        
+        # Reset button states
+        self.start_btn.config(state=tk.NORMAL if self.selected_plan else tk.DISABLED)
+        self.pause_btn.config(state=tk.DISABLED)
+        self.resume_btn.config(state=tk.DISABLED)
+        self.stop_btn.config(state=tk.DISABLED)
+        
+        # Refresh Analysis and History pages with latest data
+        self._refresh_analysis_page()
+        self._refresh_history_page()
+        
+        messagebox.showinfo("Completed", "Congratulations! You have completed your study plan!")
+        print("✅ Study plan completed!")
+    
+    
     def run(self):
         """run app"""
         self.root.mainloop()
