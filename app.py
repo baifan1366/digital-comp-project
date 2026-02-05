@@ -1226,6 +1226,86 @@ class StudyPlannerApp:
         messagebox.showinfo("Completed", "Congratulations! You have completed your study plan!")
         print("✅ Study plan completed!")
     
+    def _refresh_analysis_page(self):
+        """Refresh analysis page with latest statistics"""
+        # Calculate period data based on mode
+        if self.period_mode == "7days":
+            period_data = self._get_days_data(7)
+        else:
+            period_data = self._get_days_data(30)
+        
+        # Update period statistics
+        self.period_total_time.config(text=format_duration(period_data["total_time"]))
+        self.period_session_count.config(text=str(period_data["sessions"]))
+        self.period_completed_count.config(text=str(period_data["completed"]))
+        self.period_interrupted_count.config(text=str(period_data["interrupted"]))
+        
+        # Draw period chart
+        title = f"Last {7 if self.period_mode == '7days' else 30} Days Overview"
+        if self.period_chart_mode == "bar":
+            self._draw_bar_chart(
+                self.period_chart_canvas,
+                period_data["total_time"],
+                period_data["sessions"],
+                period_data["completed"],
+                period_data["interrupted"],
+                title
+            )
+        else:
+            self._draw_pie_chart(
+                self.period_chart_canvas,
+                period_data["total_time"],
+                period_data["sessions"],
+                period_data["completed"],
+                period_data["interrupted"],
+                title
+            )
+        
+        # Calculate all-time data
+        alltime_data = self._get_alltime_data()
+        
+        # Update all-time statistics
+        self.alltime_total_time.config(text=format_duration(alltime_data["total_time"]))
+        self.alltime_session_count.config(text=str(alltime_data["sessions"]))
+        self.alltime_completed_count.config(text=str(alltime_data["completed"]))
+        self.alltime_interrupted_count.config(text=str(alltime_data["interrupted"]))
+        
+        # Draw all-time chart
+        if self.alltime_chart_mode == "bar":
+            self._draw_bar_chart(
+                self.alltime_chart_canvas,
+                alltime_data["total_time"],
+                alltime_data["sessions"],
+                alltime_data["completed"],
+                alltime_data["interrupted"],
+                "All Time Overview"
+            )
+        else:
+            self._draw_pie_chart(
+                self.alltime_chart_canvas,
+                alltime_data["total_time"],
+                alltime_data["sessions"],
+                alltime_data["completed"],
+                alltime_data["interrupted"],
+                "All Time Overview"
+            )
+        
+        # Get most used plan from history
+        recent_plans = self.history_manager.get_recent(100)
+        if recent_plans:
+            plan_counts = {}
+            
+            for plan in recent_plans:
+                plan_name = plan.name
+                if plan_name not in plan_counts:
+                    plan_counts[plan_name] = 0
+                plan_counts[plan_name] += 1
+            
+            # Find most used plan
+            most_used = max(plan_counts.items(), key=lambda x: x[1])
+            self.most_used_plan_label.config(text=f"{most_used[0]} ({most_used[1]} times)")
+        else:
+            self.most_used_plan_label.config(text="No data yet")
     
     def run(self):
         """run app"""
