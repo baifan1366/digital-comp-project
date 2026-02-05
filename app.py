@@ -1090,6 +1090,69 @@ class StudyPlannerApp:
         except ValueError as e:
             messagebox.showerror("Error", str(e))
 
+    def _on_start_session(self):
+        """Start study session"""
+        if not self.selected_plan:
+            messagebox.showwarning("Notice", "Please select a plan first")
+            return
+        
+        try:
+            # Start study session
+            self.study_planner.start_session(self.selected_plan)
+            
+            # Update UI state
+            self.start_btn.config(state=tk.DISABLED)
+            self.pause_btn.config(state=tk.NORMAL)
+            self.stop_btn.config(state=tk.NORMAL)
+            self.resume_btn.config(state=tk.DISABLED)
+            
+            # Refresh History page to show the new plan
+            self._refresh_history_page()
+            
+            print(f"✓ Started study: {self.selected_plan.name}")
+            
+        except RuntimeError as e:
+            messagebox.showerror("Error", str(e))
+    
+    def _on_pause(self):
+        """Pause session"""
+        try:
+            self.study_planner.pause_session()
+            self.pause_btn.config(state=tk.DISABLED)
+            self.resume_btn.config(state=tk.NORMAL)
+            self.phase_label.config(text="Paused")
+            print("⏸ Paused")
+        except RuntimeError as e:
+            messagebox.showerror("Error", str(e))
+    
+    def _on_resume(self):
+        """Resume session"""
+        try:
+            self.study_planner.resume_session()
+            self.pause_btn.config(state=tk.NORMAL)
+            self.resume_btn.config(state=tk.DISABLED)
+            print("▶ Resumed")
+        except RuntimeError as e:
+            messagebox.showerror("Error", str(e))
+    
+    def _on_stop(self):
+        """Stop session"""
+        self.study_planner.stop_session()
+        
+        # Reset UI
+        self.timer_label.config(text="00:00")
+        self.phase_label.config(text="Ready to Start")
+        self.start_btn.config(state=tk.NORMAL if self.selected_plan else tk.DISABLED)
+        self.pause_btn.config(state=tk.DISABLED)
+        self.resume_btn.config(state=tk.DISABLED)
+        self.stop_btn.config(state=tk.DISABLED)
+        
+        # Refresh Analysis and History pages with latest data
+        self._refresh_analysis_page()
+        self._refresh_history_page()
+        
+        print("⏹ Stopped")
+    
     def run(self):
         """run app"""
         self.root.mainloop()
