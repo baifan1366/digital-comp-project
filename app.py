@@ -1,6 +1,7 @@
 """
 Study Planner Application - With Timer Functionality and Tab Navigation
 """
+from datetime import datetime, timedelta
 import tkinter as tk
 from tkinter import messagebox, ttk, Canvas
 
@@ -1153,6 +1154,11 @@ class StudyPlannerApp:
         
         print("⏹ Stopped")
     
+<<<<<<< HEAD
+=======
+<<<<<<< Updated upstream
+=======
+>>>>>>> db1b49dfbf7009bf657e7adfe7008708c78ff9ab
     def _on_timer_tick(self, remaining_seconds: int):
         """Timer tick callback - called in background thread"""
         # Put UI update into queue
@@ -1307,6 +1313,110 @@ class StudyPlannerApp:
         else:
             self.most_used_plan_label.config(text="No data yet")
     
+<<<<<<< HEAD
+=======
+    def _get_days_data(self, days):
+        """Get statistics for the last N days"""
+        today = datetime.now().date()
+        start_date = today - timedelta(days=days-1)  # Include today
+        
+        stats_data = self.statistics_tracker._stats
+        
+        # Calculate totals for the period
+        total_time = 0
+        completed = 0
+        interrupted = 0
+        
+        # Iterate through all days in the period
+        current_day = start_date
+        while current_day <= today:
+            day_key = current_day.isoformat()
+            if day_key in stats_data.get("daily", {}):
+                day_data = stats_data["daily"][day_key]
+                total_time += day_data.get("total_study_minutes", 0)
+                completed += day_data.get("completed_sessions", 0)
+                interrupted += day_data.get("interrupted_sessions", 0)
+            
+            current_day += timedelta(days=1)
+        
+        # Total sessions = completed + interrupted
+        sessions = completed + interrupted
+        
+        return {
+            "total_time": total_time,
+            "sessions": sessions,
+            "completed": completed,
+            "interrupted": interrupted
+        }
+    
+    def _get_week_data(self):
+        """Get this week's statistics (kept for compatibility)"""
+        return self._get_days_data(7)
+    
+    def _get_month_data(self):
+        """Get this month's statistics"""
+        today = datetime.now().date()
+        month_start = today.replace(day=1)
+        
+        stats_data = self.statistics_tracker._stats
+        
+        # Calculate month totals
+        total_time = 0
+        sessions = 0
+        completed = 0
+        interrupted = 0
+        
+        # Iterate through all days in the month
+        current_day = month_start
+        while current_day <= today:
+            day_key = current_day.isoformat()
+            if day_key in stats_data.get("daily", {}):
+                day_data = stats_data["daily"][day_key]
+                total_time += day_data.get("total_study_minutes", 0)
+                sessions += day_data.get("completed_sessions", 0)
+                interrupted += day_data.get("interrupted_sessions", 0)
+            
+            current_day += timedelta(days=1)
+        
+        # Count completed pomodoros for the month
+        for week_key, week_data in stats_data.get("weekly", {}).items():
+            week_date = datetime.fromisoformat(week_key).date()
+            if month_start <= week_date <= today:
+                completed += week_data.get("completed_pomodoros", 0)
+        
+        return {
+            "total_time": total_time,
+            "sessions": sessions,
+            "completed": completed,
+            "interrupted": interrupted
+        }
+    
+    def _get_alltime_data(self):
+        """Get all-time statistics"""
+        stats_data = self.statistics_tracker._stats
+        
+        # Calculate all-time totals
+        total_time = 0
+        completed = 0
+        interrupted = 0
+        
+        for day_data in stats_data.get("daily", {}).values():
+            total_time += day_data.get("total_study_minutes", 0)
+            completed += day_data.get("completed_sessions", 0)
+            interrupted += day_data.get("interrupted_sessions", 0)
+        
+        # Total sessions = completed + interrupted
+        sessions = completed + interrupted
+        
+        return {
+            "total_time": total_time,
+            "sessions": sessions,
+            "completed": completed,
+            "interrupted": interrupted
+        }
+    
+>>>>>>> Stashed changes
+>>>>>>> db1b49dfbf7009bf657e7adfe7008708c78ff9ab
     def run(self):
         """run app"""
         self.root.mainloop()
