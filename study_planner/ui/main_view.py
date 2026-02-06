@@ -68,7 +68,7 @@ class MainWindow:
         
         # Build UI
         self._build_ui()
-
+    
     def _build_ui(self) -> None:
         """Build the complete user interface."""
         # Main container with padding
@@ -294,7 +294,7 @@ class MainWindow:
         
         for i in range(4):
             controls_frame.columnconfigure(i, weight=1)
-
+    
     def _select_preset(self, plan: StudyPlan) -> None:
         """
         Handle preset plan selection.
@@ -488,3 +488,70 @@ class MainWindow:
         self.completed_label.config(text=str(completed_count))
         self.interrupted_label.config(text=str(interrupted_count))
     
+    # Public methods for external control
+    
+    def set_session_active(self, active: bool) -> None:
+        """
+        Update UI state for active session.
+        
+        Args:
+            active: True if session is active, False otherwise
+        """
+        self._session_active = active
+        
+        if active:
+            self.start_btn.config(state=tk.DISABLED)
+            self.pause_btn.config(state=tk.NORMAL)
+            self.stop_btn.config(state=tk.NORMAL)
+            self.resume_btn.config(state=tk.DISABLED)
+            
+            # Disable plan modification controls
+            self.create_btn.config(state=tk.DISABLED)
+        else:
+            self.start_btn.config(state=tk.NORMAL if self._selected_plan else tk.DISABLED)
+            self.pause_btn.config(state=tk.DISABLED)
+            self.stop_btn.config(state=tk.DISABLED)
+            self.resume_btn.config(state=tk.DISABLED)
+            
+            # Enable plan modification controls
+            self.create_btn.config(state=tk.NORMAL)
+            
+            # Refresh history when session ends
+            self._refresh_history()
+            
+            # Update statistics display when session ends
+            self._update_statistics_display()
+    
+    def set_session_paused(self, paused: bool) -> None:
+        """
+        Update UI state for paused session.
+        
+        Args:
+            paused: True if session is paused, False otherwise
+        """
+        self._session_paused = paused
+        
+        if paused:
+            self.pause_btn.config(state=tk.DISABLED)
+            self.resume_btn.config(state=tk.NORMAL)
+            self.stop_btn.config(state=tk.NORMAL)
+        else:
+            self.pause_btn.config(state=tk.NORMAL)
+            self.resume_btn.config(state=tk.DISABLED)
+            self.stop_btn.config(state=tk.NORMAL)
+    
+    def set_start_callback(self, callback: Callable[[StudyPlan], None]) -> None:
+        """Set callback for start button."""
+        self._on_start_callback = callback
+    
+    def set_pause_callback(self, callback: Callable[[], None]) -> None:
+        """Set callback for pause button."""
+        self._on_pause_callback = callback
+    
+    def set_resume_callback(self, callback: Callable[[], None]) -> None:
+        """Set callback for resume button."""
+        self._on_resume_callback = callback
+    
+    def set_stop_callback(self, callback: Callable[[], None]) -> None:
+        """Set callback for stop button."""
+        self._on_stop_callback = callback
