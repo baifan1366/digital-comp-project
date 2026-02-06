@@ -1,6 +1,7 @@
 """
 Study Planner Application - With Timer Functionality and Tab Navigation
 """
+
 import tkinter as tk
 from tkinter import messagebox, ttk, Canvas
 from study_planner.core.plans import PlanManager, StudyPlan
@@ -17,7 +18,6 @@ import platformdirs
 import os
 import queue
 
-from study_planner.utils.validation import validate_numeric_input
 
 # Color definitions - Enhanced modern palette
 PRIMARY_BLUE = "#4A90E2"
@@ -39,7 +39,10 @@ BORDER_COLOR = "#D0D7DE"
 BORDER_LIGHT = "#E8EDF2"
 SHADOW_COLOR = "#00000010"
 
+
 class StudyPlannerApp:
+    """Study Planner Application"""
+    
     def __init__(self):
         # Initialize storage
         app_dir = platformdirs.user_data_dir("StudyPlanner", "StudyPlannerApp")
@@ -111,7 +114,7 @@ class StudyPlannerApp:
         print("4. Automatic phase switching (study/break)")
         print("5. System notifications and sound alerts")
         print("="*60 + "\n")
-
+    
     def _build_ui(self):
         """Build complete UI with tab navigation"""
         # Header bar with horizontal layout
@@ -608,7 +611,7 @@ class StudyPlannerApp:
             **button_style
         )
         self.stop_btn.pack(side=tk.LEFT, padx=5, expand=True, fill=tk.X)
-        
+    
     def _create_analysis_page(self):
         """Create analysis page with statistics and charts"""
         analysis_frame = tk.Frame(self.pages_container, bg=BG_LIGHT)
@@ -673,7 +676,7 @@ class StudyPlannerApp:
         
         # === RIGHT COLUMN: All Time ===
         self._build_alltime_section(right_column)
-
+    
     def _build_period_section(self, parent):
         """Build Last 7/30 Days section with toggle"""
         # Header with toggle button
@@ -806,7 +809,7 @@ class StudyPlannerApp:
             highlightthickness=0
         )
         self.period_chart_canvas.pack(fill=tk.BOTH, expand=True)
-
+    
     def _build_alltime_section(self, parent):
         """Build All Time section"""
         # Header
@@ -945,7 +948,7 @@ class StudyPlannerApp:
             highlightthickness=0
         )
         self.alltime_chart_canvas.pack(fill=tk.BOTH, expand=True)
-
+    
     def _create_history_page(self):
         """Create history page with run history table"""
         history_frame = tk.Frame(self.pages_container, bg=BG_LIGHT)
@@ -1031,7 +1034,7 @@ class StudyPlannerApp:
             pady=12,
             cursor="hand2"
         ).pack(side=tk.LEFT)
-
+    
     def _select_preset(self, plan):
         """Select preset plan"""
         self.selected_plan = plan
@@ -1047,7 +1050,7 @@ class StudyPlannerApp:
         self.result_label.config(text=desc, fg=SUCCESS)
         self.start_btn.config(state=tk.NORMAL)
         print(f"✓ Selected: {plan.name} - {plan.cycles} cycles" + (f" + {plan.long_break_minutes}min long break" if plan.long_break_minutes > 0 else ""))
-
+    
     def _create_custom(self):
         """Create custom plan"""
         # Get plan name (use default if empty)
@@ -1102,7 +1105,7 @@ class StudyPlannerApp:
             print(f"✓ Created custom plan: {plan_name} - {study_min}/{break_min} × {cycles} cycles" + (f" + {long_break_min}min long break" if long_break_min > 0 else ""))
         except ValueError as e:
             messagebox.showerror("Error", str(e))
-
+    
     def _on_start_session(self):
         """Start study session"""
         if not self.selected_plan:
@@ -1166,11 +1169,6 @@ class StudyPlannerApp:
         
         print("⏹ Stopped")
     
-<<<<<<<<< Temporary merge branch 1
-=========
-<<<<<<< Updated upstream
-=======
->>>>>>>>> Temporary merge branch 2
     def _on_timer_tick(self, remaining_seconds: int):
         """Timer tick callback - called in background thread"""
         # Put UI update into queue
@@ -1325,8 +1323,6 @@ class StudyPlannerApp:
         else:
             self.most_used_plan_label.config(text="No data yet")
     
-<<<<<<<<< Temporary merge branch 1
-=========
     def _get_days_data(self, days):
         """Get statistics for the last N days"""
         today = datetime.now().date()
@@ -1450,7 +1446,7 @@ class StudyPlannerApp:
             self.period_chart_toggle_btn.config(text="📊 → 🥧 Pie Chart")
         
         self._refresh_analysis_page()
-
+    
     def _toggle_alltime_chart(self):
         """Toggle all-time chart between bar and pie"""
         if self.alltime_chart_mode == "bar":
@@ -1545,7 +1541,7 @@ class StudyPlannerApp:
             font=("Segoe UI", 11, "bold"),
             fill=TEXT_PRIMARY
         )
-
+    
     def _draw_pie_chart(self, canvas, study_time, sessions, completed, interrupted, title):
         """Draw pie chart for 4 statistics"""
         canvas.delete("all")
@@ -1720,9 +1716,10 @@ class StudyPlannerApp:
             print(f"✓ Running again: {plan.name}")
     
     def run(self):
-        """run app"""
         self.root.mainloop()
-        
+
+
+
 if __name__ == "__main__":
     app = StudyPlannerApp()
     app.run()
