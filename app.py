@@ -1,9 +1,21 @@
 """
 Study Planner Application - With Timer Functionality and Tab Navigation
 """
-from datetime import datetime, timedelta
 import tkinter as tk
 from tkinter import messagebox, ttk, Canvas
+from study_planner.core.plans import PlanManager, StudyPlan
+from study_planner.core.planner import StudyPlanner
+from study_planner.core.notifier import Notifier
+from study_planner.core.state import SessionState
+from study_planner.data.history import HistoryManager
+from study_planner.data.statistics import StatisticsTracker
+from study_planner.data.storage import Storage
+from study_planner.utils.validation import validate_numeric_input
+from study_planner.utils.time_utils import format_time, format_duration
+from datetime import datetime, timedelta
+import platformdirs
+import os
+import queue
 
 from study_planner.utils.validation import validate_numeric_input
 
@@ -1415,8 +1427,303 @@ class StudyPlannerApp:
             "interrupted": interrupted
         }
     
+<<<<<<< HEAD
 >>>>>>> Stashed changes
 >>>>>>> db1b49dfbf7009bf657e7adfe7008708c78ff9ab
+=======
+    def _toggle_period(self):
+        """Toggle between 7 days and 30 days view"""
+        if self.period_mode == "7days":
+            self.period_mode = "30days"
+            self.period_label.config(text="Last 30 Days Statistics")
+            self.period_toggle_btn.config(text="Switch to 7 Days")
+        else:
+            self.period_mode = "7days"
+            self.period_label.config(text="Last 7 Days Statistics")
+            self.period_toggle_btn.config(text="Switch to 30 Days")
+        
+        self._refresh_analysis_page()
+    
+    def _toggle_period_chart(self):
+        """Toggle period chart between bar and pie"""
+        if self.period_chart_mode == "bar":
+            self.period_chart_mode = "pie"
+            self.period_chart_toggle_btn.config(text="🥧 → 📊 Bar Chart")
+        else:
+            self.period_chart_mode = "bar"
+            self.period_chart_toggle_btn.config(text="📊 → 🥧 Pie Chart")
+        
+        self._refresh_analysis_page()
+
+    def _toggle_alltime_chart(self):
+        """Toggle all-time chart between bar and pie"""
+        if self.alltime_chart_mode == "bar":
+            self.alltime_chart_mode = "pie"
+            self.alltime_chart_toggle_btn.config(text="🥧 → 📊 Bar Chart")
+        else:
+            self.alltime_chart_mode = "bar"
+            self.alltime_chart_toggle_btn.config(text="📊 → 🥧 Pie Chart")
+        
+        self._refresh_analysis_page()
+    
+    def _draw_bar_chart(self, canvas, study_time, sessions, completed, interrupted, title):
+        """Draw bar chart for 4 statistics"""
+        canvas.delete("all")
+        
+        # Get canvas dimensions
+        width = canvas.winfo_width()
+        if width <= 1:
+            width = 400  # Default width for half screen
+        height = 280
+        
+        # Chart settings - increased padding for labels
+        padding_left = 40
+        padding_right = 40
+        padding_top = 40
+        padding_bottom = 70
+        
+        chart_width = width - padding_left - padding_right
+        chart_height = height - padding_top - padding_bottom
+        
+        # Data for 4 bars
+        data = [
+            ("Study\nTime", study_time, SUCCESS),
+            ("Sessions", sessions, INFO),
+            ("Completed", completed, PRIMARY_BLUE),
+            ("Interrupted", interrupted, WARNING)
+        ]
+        
+        # Find max value for scaling
+        max_value = max([d[1] for d in data]) if any(d[1] > 0 for d in data) else 1
+        
+        # Calculate bar dimensions with more spacing
+        num_bars = len(data)
+        total_spacing = chart_width * 0.4  # 40% for spacing
+        total_bar_width = chart_width - total_spacing
+        bar_width = total_bar_width / num_bars
+        bar_spacing = total_spacing / (num_bars + 1)
+        
+        # Draw bars
+        for i, (label, value, color) in enumerate(data):
+            # Calculate bar position with even spacing
+            x = padding_left + bar_spacing + i * (bar_width + bar_spacing)
+            
+            # Calculate bar height (proportional to value)
+            if max_value > 0:
+                bar_height = (value / max_value) * chart_height
+            else:
+                bar_height = 0
+            
+            # Draw bar
+            y1 = height - padding_bottom
+            y2 = y1 - bar_height
+            
+            canvas.create_rectangle(
+                x, y1, x + bar_width, y2,
+                fill=color,
+                outline=color,
+                width=2
+            )
+            
+            # Draw value on top of bar
+            canvas.create_text(
+                x + bar_width / 2, max(y2 - 15, padding_top),
+                text=str(value),
+                font=("Segoe UI", 11, "bold"),
+                fill=TEXT_PRIMARY
+            )
+            
+            # Draw label below bar with better spacing
+            canvas.create_text(
+                x + bar_width / 2, y1 + 25,
+                text=label,
+                font=("Segoe UI", 9),
+                fill=TEXT_SECONDARY,
+                justify=tk.CENTER
+            )
+        
+        # Draw title
+        canvas.create_text(
+            width / 2, 15,
+            text=title,
+            font=("Segoe UI", 11, "bold"),
+            fill=TEXT_PRIMARY
+        )
+
+    def _draw_pie_chart(self, canvas, study_time, sessions, completed, interrupted, title):
+        """Draw pie chart for 4 statistics"""
+        canvas.delete("all")
+        
+        # Get canvas dimensions
+        width = canvas.winfo_width()
+        if width <= 1:
+            width = 400
+        height = 280
+        
+        # Data for pie chart
+        data = [
+            ("Study Time", study_time, SUCCESS),
+            ("Sessions", sessions, INFO),
+            ("Completed", completed, PRIMARY_BLUE),
+            ("Interrupted", interrupted, WARNING)
+        ]
+        
+        # Calculate total
+        total = sum([d[1] for d in data])
+        
+        if total == 0:
+            # Draw "No data" message
+            canvas.create_text(
+                width / 2, height / 2,
+                text="No data available",
+                font=("Segoe UI", 12),
+                fill=TEXT_SECONDARY
+            )
+            return
+        
+        # Pie chart settings
+        center_x = width / 2
+        center_y = height / 2 + 10
+        radius = min(width, height) / 3
+        
+        # Draw pie slices
+        start_angle = 0
+        for label, value, color in data:
+            if value > 0:
+                # Calculate slice angle
+                slice_angle = (value / total) * 360
+                
+                # Draw slice
+                canvas.create_arc(
+                    center_x - radius, center_y - radius,
+                    center_x + radius, center_y + radius,
+                    start=start_angle, extent=slice_angle,
+                    fill=color, outline="white", width=2
+                )
+                
+                # Calculate label position
+                label_angle = start_angle + slice_angle / 2
+                label_x = center_x + (radius * 0.7) * tk._default_root.tk.call('expr', f'cos({label_angle} * 3.14159 / 180)')
+                label_y = center_y - (radius * 0.7) * tk._default_root.tk.call('expr', f'sin({label_angle} * 3.14159 / 180)')
+                
+                # Draw percentage
+                percentage = (value / total) * 100
+                canvas.create_text(
+                    label_x, label_y,
+                    text=f"{percentage:.0f}%",
+                    font=("Segoe UI", 9, "bold"),
+                    fill="white"
+                )
+                
+                start_angle += slice_angle
+        
+        # Draw legend
+        legend_x = 20
+        legend_y = height - 60
+        for i, (label, value, color) in enumerate(data):
+            if value > 0:
+                # Color box
+                canvas.create_rectangle(
+                    legend_x, legend_y + i * 15,
+                    legend_x + 10, legend_y + i * 15 + 10,
+                    fill=color, outline=color
+                )
+                # Label
+                canvas.create_text(
+                    legend_x + 15, legend_y + i * 15 + 5,
+                    text=f"{label}: {value}",
+                    font=("Segoe UI", 8),
+                    fill=TEXT_PRIMARY,
+                    anchor=tk.W
+                )
+        
+        # Draw title
+        canvas.create_text(
+            width / 2, 15,
+            text=title,
+            font=("Segoe UI", 11, "bold"),
+            fill=TEXT_PRIMARY
+        )
+    
+    def _refresh_history_page(self):
+        """Refresh history page with latest run history"""
+        # Clear existing data
+        for item in self.history_tree.get_children():
+            self.history_tree.delete(item)
+        
+        # Get history entries with timestamps
+        history_entries = self.history_manager._history[:50]
+        
+        # Add to table
+        for entry in history_entries:
+            plan = StudyPlan.from_dict(entry["plan"])
+            timestamp_str = entry.get("timestamp", "")
+            
+            # Format timestamp
+            try:
+                timestamp = datetime.fromisoformat(timestamp_str)
+                formatted_time = timestamp.strftime("%Y-%m-%d %H:%M:%S")
+            except:
+                formatted_time = "Recently used"
+            
+            self.history_tree.insert("", tk.END, values=(
+                plan.name,
+                f"{plan.study_minutes} min",
+                f"{plan.break_minutes} min",
+                plan.cycles,
+                formatted_time
+            ))
+    
+    def _run_again_selected(self):
+        """Run the selected plan from history again"""
+        selection = self.history_tree.selection()
+        if not selection:
+            messagebox.showwarning("Notice", "Please select a plan from the history table")
+            return
+        
+        # Get selected item index
+        item = selection[0]
+        item_index = self.history_tree.index(item)
+        
+        # Get plan from history
+        history_entries = self.history_manager._history[:50]
+        if item_index < len(history_entries):
+            entry = history_entries[item_index]
+            plan = StudyPlan.from_dict(entry["plan"])
+            
+            # Switch to home page
+            self._switch_page("home")
+            
+            # Select the plan
+            self.selected_plan = plan
+            
+            # Update form fields
+            self.study_entry.delete(0, tk.END)
+            self.study_entry.insert(0, str(plan.study_minutes))
+            self.break_entry.delete(0, tk.END)
+            self.break_entry.insert(0, str(plan.break_minutes))
+            self.cycles_entry.delete(0, tk.END)
+            self.cycles_entry.insert(0, str(plan.cycles))
+            self.long_break_entry.delete(0, tk.END)
+            self.long_break_entry.insert(0, str(plan.long_break_minutes))
+            
+            # Update result label
+            desc = f"Selected: {plan.name} ({plan.study_minutes}min study / {plan.break_minutes}min break"
+            if plan.cycles > 1:
+                desc += f" × {plan.cycles} cycles"
+            if plan.long_break_minutes > 0:
+                desc += f" + {plan.long_break_minutes}min long break"
+            desc += ")"
+            
+            self.result_label.config(text=desc, fg=SUCCESS)
+            self.start_btn.config(state=tk.NORMAL)
+            
+            # Auto-start the plan
+            self._on_start_session()
+            
+            print(f"✓ Running again: {plan.name}")
+    
+>>>>>>> 038b427b96c98427e7f48517ac0b08e18c19c334
     def run(self):
         """run app"""
         self.root.mainloop()
