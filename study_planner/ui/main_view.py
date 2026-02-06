@@ -294,3 +294,197 @@ class MainWindow:
         
         for i in range(4):
             controls_frame.columnconfigure(i, weight=1)
+
+    def _select_preset(self, plan: StudyPlan) -> None:
+        """
+        Handle preset plan selection.
+        
+        Args:
+            plan: Selected preset StudyPlan
+        """
+        if self._session_active and not self._can_modify():
+            self._show_error("Cannot change plan during active session")
+            return
+        
+        self._selected_plan = plan
+        self._clear_error()
+        self.start_btn.config(state=tk.NORMAL)
+        
+        # Update custom form to show preset values
+        self.name_entry.delete(0, tk.END)
+        self.name_entry.insert(0, plan.name)
+        self.study_entry.delete(0, tk.END)
+        self.study_entry.insert(0, str(plan.study_minutes))
+        self.break_entry.delete(0, tk.END)
+        self.break_entry.insert(0, str(plan.break_minutes))
+        self.cycles_entry.delete(0, tk.END)
+        self.cycles_entry.insert(0, str(plan.cycles))
+        self.long_break_entry.delete(0, tk.END)
+        self.long_break_entry.insert(0, str(plan.long_break_minutes))
+    
+    def _create_custom_plan(self) -> None:
+        """Handle custom plan creation with validation."""
+        if self._session_active and not self._can_modify():
+            self._show_error("Cannot change plan during active session")
+            return
+        
+        # Get and validate inputs
+        name = self.name_entry.get().strip()
+        if not name:
+            self._show_error("Please enter a plan name")
+            return
+        
+        # Validate study time
+        study_str = self.study_entry.get().strip()
+        study_min = validate_numeric_input(study_str)
+        if study_min is None:
+            self._show_error("Please enter a valid number for study time")
+            return
+        
+        # Validate break time
+        break_str = self.break_entry.get().strip()
+        break_min = validate_numeric_input(break_str)
+        if break_min is None:
+            self._show_error("Please enter a valid number for break time")
+            return
+        
+        # Validate cycles
+        cycles_str = self.cycles_entry.get().strip()
+        cycles = validate_numeric_input(cycles_str)
+        if cycles is None:
+            self._show_error("Please enter a valid number for cycles")
+            return
+        
+        # Validate long break (0 is allowed)
+        long_break_str = self.long_break_entry.get().strip()
+        try:
+            long_break_min = int(long_break_str)
+            if long_break_min < 0:
+                self._show_error("Long break time cannot be negative")
+                return
+        except ValueError:
+            self._show_error("Please enter a valid number for long break time")
+            return
+        
+        # Create plan with validation
+        try:
+            plan = self.plan_manager.create_custom_plan(
+                name=name,
+                study_min=study_min,
+                break_min=break_min,
+                cycles=cycles,
+                long_break_min=long_break_min
+            )
+            
+            self._selected_plan = plan
+            self._clear_error()
+            self.start_btn.config(state=tk.NORMAL)
+            
+        except ValueError as e:
+            self._show_error(str(e))
+    
+    def _refresh_history(self) -> None:
+        """Refresh the history listbox with recent configurations."""
+        self.history_listbox.delete(0, tk.END)
+        
+        recent_plans = self.history_manager.get_recent(5)
+        for plan in recent_plans:
+            display_text = f"{plan.name}: {plan.study_minutes}m/{plan.break_minutes}m"
+            if plan.cycles > 1:
+                display_text += f", {plan.cycles} cycles"
+            if plan.long_break_minutes > 0:
+                display_text += f", {plan.long_break_minutes}m long break"
+            
+            self.history_listbox.insert(tk.END, display_text)
+    
+    def _on_history_select(self, event) -> None:
+        """Handle history listbox selection event."""
+        # Just highlight, actual load happens on button click
+        pass
+    
+    def _load_from_history(self) -> None:
+        """Load selected configuration from history."""
+        if self._session_active and not self._can_modify():
+            self._show_error("Cannot change plan during active session")
+            return
+        
+        selection = self.history_listbox.curselection()
+        if not selection:
+            self._show_error("Please select a configuration from history")
+            return
+        
+        index = selection[0]
+        recent_plans = self.history_manager.get_recent(5)
+        
+        if index < len(recent_plans):
+            plan = recent_plans[index]
+            self._select_preset(plan)  # Reuse preset selection logic
+    
+    def _on_start_clicked(self) -> None:
+        """Handle start button click."""
+        if not self._selected_plan:
+            self._show_error("Please select or create a plan first")
+            return
+        
+        if self._on_start_callback:
+            self._on_start_callback(self._selected_plan)
+    
+    def _on_pause_clicked(self) -> None:
+        """Handle pause button click."""
+        if self._on_pause_callback:
+            self._on_pause_callback()
+    
+    def _on_resume_clicked(self) -> None:
+        """Handle resume button click."""
+        if self._on_resume_callback:
+            self._on_resume_callback()
+    
+    def _on_stop_clicked(self) -> None:
+        """Handle stop button click."""
+        if self._on_stop_callback:
+            self._on_stop_callback()
+    
+    def _show_error(self, message: str) -> None:
+        """
+        Display error message.
+        
+        Args:
+            message: Error message to display
+        """
+        self.error_label.config(text=message)
+    
+    def _clear_error(self) -> None:
+        """Clear error message display."""
+        self.error_label.config(text="")
+    
+    def _can_modify(self) -> bool:
+        """
+        Check if plan modification is allowed.
+        
+        Returns:
+            True if modification is allowed, False otherwise
+        """
+        # This will be connected to StudyPlanner.can_modify_plan()
+        return not self._session_active
+    
+    def _update_statistics_display(self) -> None:
+        """
+        Update the statistics display with current values.
+        
+        Fetches latest statistics from the tracker and updates UI labels.
+        """
+        if not self.statistics_tracker:
+            return
+        
+        # Get statistics
+        today_minutes = self.statistics_tracker.get_today_study_time()
+        week_minutes = self.statistics_tracker.get_week_study_time()
+        completed_count = self.statistics_tracker.get_completed_pomodoros()
+        interrupted_count = self.statistics_tracker.get_interrupted_count()
+        
+        # Update labels
+        self.today_time_label.config(text=format_duration(today_minutes))
+        self.week_time_label.config(text=format_duration(week_minutes))
+        self.completed_label.config(text=str(completed_count))
+        self.interrupted_label.config(text=str(interrupted_count))
+    
